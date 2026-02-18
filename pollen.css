@@ -1,0 +1,184 @@
+#game_play_area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  height: 1500px;
+  flex-direction: column;
+}
+
+#board {
+  position: relative;
+  background-color: brown;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border-radius: 10px;
+  padding: 20px;
+  height: 1000px;
+}
+
+.position {
+  background-color: blueviolet;
+}
+
+.flower1 {
+  background-image: url("img/flower1.png");
+}
+.flower2 {
+  background-image: url("img/flower2.png");
+}
+.flower3 {
+  background-image: url("img/flower3.png");
+}
+.flower4 {
+  background-image: url("img/flower4.png");
+}
+.flower5 {
+  background-image: url("img/flower5.png");
+}
+.bee {
+  background-image: url("img/bee.png");
+}
+.bee0 {
+  background-image: url("img/bee0.png");
+}
+.bee1 {
+  background-image: url("img/bee1.png");
+}
+.bee2 {
+  background-image: url("img/bee2.png");
+}
+.bee3 {
+  background-image: url("img/bee3.png");
+}
+.bee4 {
+  background-image: url("img/bee4.png");
+}
+.bee5 {
+  background-image: url("img/bee5.png");
+}
+.beeMove {
+  background-image: url("img/beeMove.png");
+}
+.bumblebee {
+  background-image: url("img/bumblebee.png");
+}
+.bumblebee0 {
+  background-image: url("img/bumblebee0.png");
+}
+.bumblebee1 {
+  background-image: url("img/bumblebee1.png");
+}
+.bumblebee2 {
+  background-image: url("img/bumblebee2.png");
+}
+.bumblebee3 {
+  background-image: url("img/bumblebee3.png");
+}
+.bumblebee4 {
+  background-image: url("img/bumblebee4.png");
+}
+.bumblebee5 {
+  background-image: url("img/bumblebee5.png");
+}
+.bumblebeeMove {
+  background-image: url("img/bumblebeeMove.png");
+}
+.objective1 {
+  background-image: url("img/objective1.png");
+}
+.objective2 {
+  background-image: url("img/objective2.png");
+}
+.objective3 {
+  background-image: url("img/objective3.png");
+}
+.objective4 {
+  background-image: url("img/objective4.png");
+}
+.objective5 {
+  background-image: url("img/objective5.png");
+}
+.objective6 {
+  background-image: url("img/objective6.png");
+}
+.objective7 {
+  background-image: url("img/objective7.png");
+}
+.objective8 {
+  background-image: url("img/objective8.png");
+}
+.objective9 {
+  background-image: url("img/objective9.png");
+}
+.objective0 {
+  background-image: url("img/objective0.png");
+}
+.objectiveBack {
+  background-image: url("img/objectiveBack.png");
+}
+
+.cards {
+  display: flex;
+  gap: 10px;
+}
+.card {
+  width: 80px;
+  height: 120px;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+}
+.place {
+  background-color: blueviolet;
+}
+
+.hand {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin: 20px;
+  width: 100%;
+  height: 130px;
+  border-radius: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+
+  .theCards {
+    display: flex;
+    gap: 10px;
+  }
+
+  .myCard {
+    cursor: pointer;
+  }
+
+  .myCard:hover {
+    transform: translateY(-10px);
+    transition: transform 0.2s;
+  }
+
+  .selected {
+    border: 3px solid gold;
+  }
+}
+
+#myHand {
+  background-color: green;
+}
+#opponentHand {
+  background-color: blue;
+}
+
+#my_deck_count,
+#opponent_deck_count {
+  text-align: center;
+  padding-top: 10px;
+  font-size: 20px;
+  font-style: italic;
+}
