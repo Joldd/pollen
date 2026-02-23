@@ -8,7 +8,7 @@ use Bga\GameFramework\StateType;
 use Bga\Games\pollen\Game;
 use Bga\GameFramework\States\PossibleAction;
 use BgaUserException;
-use Bga\Games\pollen\States\NextPlayer;
+use Bga\Games\pollen\States\PlayerDraw;
 
 class PlayerTurn extends \Bga\GameFramework\States\GameState
 {
@@ -19,7 +19,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             id: 10,
             type: StateType::ACTIVE_PLAYER,
             transitions: [
-                'nextPlayer' => NextPlayer::class,
+                'nextPlayer' => PlayerDraw::class,
                 'stayActive' => PlayerTurn::class,
             ],
             description: clienttranslate('${actplayer} must choose a card to play'),
@@ -72,7 +72,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $player_no = array_search($player_id, array_keys($players)) + 1;
 
         // Check if playing on own side or opponent's side
-        $is_own_side = $y > 4 ;
+        $is_own_side = $y > 4 && $player_no == 1 || $y < 4 && $player_no == 2;
 
         // Determine action cost
         $action_cost = $is_own_side ? 1 : 2;

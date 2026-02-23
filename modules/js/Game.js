@@ -110,7 +110,6 @@ class PlayerTurn {
     }
     const cardId = this.game.cardSelected.id.split("_")[1];
 
-    console.log("We send ", { card_id: cardId, x: x, y: y, isHide: isHide });
     this.bga.actions.performAction("actPlayCard", {
       card_id: cardId,
       x: x,
@@ -463,7 +462,6 @@ export class Game {
 
   // TODO: from this point and below, you can write your game notifications handling methods
   async notif_cardPlayed(args) {
-    console.log("notif_cardPlayed", args);
 
     // Update the board with the new card placement
     const { card, x, y, player_id, remaining_ap, is_hide } = args;
@@ -494,7 +492,6 @@ export class Game {
 
       // Animate the card moving from hand to board
       await this.animationManager.slideAndAttach(cardElement, targetCell);
-      console.log("caché", is_hide);
       if (is_hide) {
         // Flip the card face down after moving it to the board
         await this.flipCardFaceDown(cardElement, color);
@@ -523,6 +520,32 @@ export class Game {
     if (player_id == this.player_id) {
       this.cardSelected = null;
       this.positionSelected = null;
+    }
+  }
+
+  async notif_cardsDrawn(args) {
+    if (args.cards.length > 0) {
+      const color = args.cards[0].type_arg[0] == 1 ? "bee" : "bumblebee";
+      args.cards.forEach(async (card) => {
+        const type = color + (card.type_arg % 100); // e.g., bee3, bumblebee2...
+        const cardElement = document.createElement("div");
+        cardElement.classList.add("card", type);
+        cardElement.id = `card_${card.id}`;
+        myDeck.appendChild(cardElement);
+        await this.animationManager.slideAndAttach(cardElement, myCards);
+      });
+    }
+  }
+
+  async notif_cardsDrawnOpponent(args) {
+    if (args.count > 0 && !this.playerTurn.isCurrentPlayerActive) {
+      const opponentColor = opponentDeck.children[0].classList.contains("bumblebee") ? "bumblebee" : "bee";
+      for (let i = 0; i < args.count; i++) {
+        const cardElement = document.createElement("div");
+        cardElement.classList.add("card", opponentColor);
+        opponentDeck.appendChild(cardElement);
+        await this.animationManager.slideAndAttach(cardElement, opponentCards);
+      }
     }
   }
 }

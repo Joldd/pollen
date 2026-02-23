@@ -18,7 +18,7 @@ class NextPlayer extends GameState
             updateGameProgression: true,
             transitions: [
                 'nextTurn' => PlayerTurn::class,
-                'endGame' => GameEnd::class,  // Si vous avez un état de fin de jeu
+                'endGame' => GameEnd::class, 
             ]
         );
     }
@@ -28,15 +28,8 @@ class NextPlayer extends GameState
          // Active next player
         $player_id = intval($this->game->activeNextPlayer());
         
-        // Reset action points to 3 for the new active player
-        $this->game->setActionPoints($player_id, 3);
-        
-        // TODO: Check if game should end here
-        // For example, check if deck is empty, or some end condition
-        // if ($this->shouldGameEnd()) {
-        //     $this->game->gamestate->nextState('endGame');
-        //     return;
-        // }
+        // Reset action points to 2 for the new active player
+        $this->game->setActionPoints($player_id, 2);  
         
         // Continue to next turn
         $this->game->gamestate->nextState('nextTurn');
