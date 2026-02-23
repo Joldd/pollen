@@ -25,6 +25,8 @@ class PlayerTurn {
     this.game = game;
     this.bga = bga;
     this.isCurrentPlayerActive = false;
+    this.btnVisible = null;
+    this.btnHide = null;
     this.btnConfirm = null;
     this.btnCancel = null;
   }
@@ -39,11 +41,30 @@ class PlayerTurn {
     //     ? _("${you} must choose a card to play")
     //     : _("${actplayer} must choose a card to play"),
     // );
-    this.bga.statusBar.addActionButton(_("Confirm"), () => this.onConfirm(), {
-      id: "button_confirm_id",
-      color: "primary",
-    });
-
+    this.bga.statusBar.addActionButton(
+      _("Confirm"),
+      () => this.onConfirm(false),
+      {
+        id: "button_confirm_id",
+        color: "primary",
+      },
+    );
+    this.bga.statusBar.addActionButton(
+      _("Visible (-1 AP)"),
+      () => this.onConfirm(false),
+      {
+        id: "button_visible_id",
+        color: "primary",
+      },
+    );
+    this.bga.statusBar.addActionButton(
+      _("Hidden (-2 AP)"),
+      () => this.onConfirm(true),
+      {
+        id: "button_hide_id",
+        color: "primary",
+      },
+    );
     this.bga.statusBar.addActionButton(_("Cancel"), () => this.onCancel(), {
       id: "button_cancel_id",
       color: "alert",
@@ -51,8 +72,12 @@ class PlayerTurn {
 
     this.btnConfirm = document.getElementById("button_confirm_id");
     this.btnCancel = document.getElementById("button_cancel_id");
+    this.btnVisible = document.getElementById("button_visible_id");
+    this.btnHide = document.getElementById("button_hide_id");
     this.btnConfirm.style.display = "none";
     this.btnCancel.style.display = "none";
+    this.btnVisible.style.display = "none";
+    this.btnHide.style.display = "none";
   }
 
   /**
@@ -69,7 +94,7 @@ class PlayerTurn {
    */
   onPlayerActivationChange(args, isCurrentPlayerActive) {}
 
-  onConfirm() {
+  onConfirm(isHide) {
     if (!this.game.cardSelected || !this.game.positionSelected) {
       this.bga.showMessage(
         _("Please select a card and a position before confirming."),
@@ -85,11 +110,12 @@ class PlayerTurn {
     }
     const cardId = this.game.cardSelected.id.split("_")[1];
 
-    console.log("We send ", { card_id: cardId, x: x, y: y });
+    console.log("We send ", { card_id: cardId, x: x, y: y, isHide: isHide });
     this.bga.actions.performAction("actPlayCard", {
       card_id: cardId,
       x: x,
       y: y,
+      isHide: isHide,
     });
   }
 
@@ -109,6 +135,8 @@ class PlayerTurn {
     );
     this.btnConfirm.style.display = "none";
     this.btnCancel.style.display = "none";
+    this.btnVisible.style.display = "none";
+    this.btnHide.style.display = "none";
   }
 }
 
@@ -214,10 +242,7 @@ export class Game {
     });
 
     // TODO: Set up your game interface here, according to "gamedatas"
-    const playerColor =
-      Math.floor(Object.values(gamedatas.hand)[0].type_arg / 100) === 1
-        ? "bee"
-        : "bumblebee";
+    const playerColor = this.myPlayerNumber === 1 ? "bee" : "bumblebee";
 
     // Display player's hand
     for (let card_id in gamedatas.hand) {
@@ -233,14 +258,16 @@ export class Game {
       gamedatas.board.forEach((card) => {
         const boardX = card.location_arg[0];
         let boardY = card.location_arg[1];
-        console.log("Placing card on board at:", boardX, boardY);
+
+        const isVisible = card.location_arg[2] == 0;
         if (!this.firstPlayer) {
           boardY = 8 - parseInt(boardY); // Mirror Y coordinate for second player
         }
         const cell = document.getElementById(`card_${boardX}_${boardY}`);
+        const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+        const number = isVisible ? card.type_arg % 100 : "";
         if (cell) {
-          const cardDiv = `<div class="card ${card.type} ${playerColor}">
-                            ${card.type === "number" ? card.type_arg % 100 : "M"}
+          const cardDiv = `<div class="card ${card.type} ${color}${number}">                   
                          </div>`;
           cell.insertAdjacentHTML("afterbegin", cardDiv);
         }
@@ -272,6 +299,10 @@ export class Game {
   onPositionSelected(e) {
     e.preventDefault();
     e.stopPropagation();
+    this.playerTurn.btnConfirm.style.display = "none";
+    this.playerTurn.btnCancel.style.display = "none";
+    this.playerTurn.btnVisible.style.display = "none";
+    this.playerTurn.btnHide.style.display = "none";
 
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
     if (!isCurrentPlayerActive) {
@@ -282,15 +313,20 @@ export class Game {
       return; // No card selected
     }
 
-    var coords = e.currentTarget.id.split("_");
-    var x = coords[1];
-    var y = coords[2];
+    const coords = e.currentTarget.id.split("_");
+    const x = coords[1];
+    let y = coords[2];
 
+    let cost = "";
     let pos = "";
     if (y > 4) {
+      this.playerTurn.btnVisible.style.display = "inline-block";
+      this.playerTurn.btnHide.style.display = "inline-block";
       pos = "your own side";
     } else {
+      this.playerTurn.btnConfirm.style.display = "inline-block";
       pos = "opponent's side";
+      cost = "(-2 AP)";
     }
 
     if (this.positionSelected) {
@@ -301,14 +337,13 @@ export class Game {
 
     const card = this.cardSelected.textContent.trim();
 
-    this.bga.statusBar.setTitle(
-      _("${you} are about to play ${card} on ${pos}")
-        .replace("${card}", card)
-        .replace("${pos}", pos),
-    );
-
-    this.playerTurn.btnConfirm.style.display = "inline-block";
     this.playerTurn.btnCancel.style.display = "inline-block";
+    this.bga.statusBar.setTitle(
+      _("${you} are about to play ${card} on ${pos} ${cost}")
+        .replace("${card}", card)
+        .replace("${pos}", pos)
+        .replace("${cost}", cost),
+    );
   }
 
   onCardSelect(e) {
@@ -335,7 +370,6 @@ export class Game {
   addCardToHand(card, playerColor) {
     // Decode card type_arg to get player color and value
     const value = card.type_arg % 100;
-
     let cardContent = "";
     if (card.type === "number") {
       cardContent = value;
@@ -380,6 +414,34 @@ export class Game {
     opponentObjective.insertAdjacentHTML("beforeend", objective);
   }
 
+  flipCardFaceDown(cardElement, deckClass) {
+    return new Promise((resolve) => {
+      cardElement.classList.add("card-flipping");
+
+      // At the halfway point of the animation, switch the card face to the back
+      setTimeout(() => {
+        // Remove all specific card classes (e.g., bee3, bee2...)
+        // and add the back class (e.g., bee)
+        const cardClasses = [...cardElement.classList];
+        cardClasses.forEach((cls) => {
+          if (cls !== deckClass && cls.startsWith(deckClass.slice(0, 3))) {
+            cardElement.classList.remove(cls);
+          }
+        });
+        cardElement.classList.add(deckClass); // add 'bee'
+      }, 300); // 300ms = half of 600ms
+
+      cardElement.addEventListener(
+        "animationend",
+        () => {
+          cardElement.classList.remove("card-flipping");
+          resolve();
+        },
+        { once: true },
+      );
+    });
+  }
+
   ///////////////////////////////////////////////////
   //// Reaction to cometD notifications
 
@@ -404,7 +466,7 @@ export class Game {
     console.log("notif_cardPlayed", args);
 
     // Update the board with the new card placement
-    const { card, x, y, player_id, remaining_ap } = args;
+    const { card, x, y, player_id, remaining_ap, is_hide } = args;
 
     // Get the target cell on the board
     let newY = y;
@@ -418,6 +480,8 @@ export class Game {
     }
 
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
+    console.log("macarte", card);
+    const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
 
     if (isCurrentPlayerActive) {
       // Get the card element (currently in hand)
@@ -430,6 +494,11 @@ export class Game {
 
       // Animate the card moving from hand to board
       await this.animationManager.slideAndAttach(cardElement, targetCell);
+      console.log("caché", is_hide);
+      if (is_hide) {
+        // Flip the card face down after moving it to the board
+        await this.flipCardFaceDown(cardElement, color);
+      }
     } else {
       // Get the card element (currently in hand)
       const cardElement = document.getElementById(`opponentCards`).children[0]; // Assuming opponent's hand cards are added as children of opponentCards

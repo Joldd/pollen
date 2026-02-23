@@ -44,7 +44,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     }
 
     #[PossibleAction]
-    public function actPlayCard(int $card_id, int $x, int $y): void
+    public function actPlayCard(int $card_id, int $x, int $y, bool $isHide): void
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
@@ -88,7 +88,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $remaining_ap = $this->game->spendActionPoints($player_id, $action_cost);
 
         // Move card to board
-        $this->game->cards->moveCard($card_id, 'board', $x * 10 + $y);
+        $this->game->cards->moveCard($card_id, 'board', $x * 100 + $y*10 + ($isHide ? 1 : 0));
 
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
@@ -105,6 +105,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
                 'action_type' => $action_type,
                 'action_cost' => $action_cost,
                 'remaining_ap' => $remaining_ap,
+                'is_hide' => $isHide,
                 'side_desc' => $is_own_side ?
                     clienttranslate('their side') :
                     clienttranslate("opponent's side")
