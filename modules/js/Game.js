@@ -160,6 +160,8 @@ export class Game {
   setup(gamedatas) {
     this.gamedatas = gamedatas;
 
+    this.playable_positions = gamedatas.playable_positions; // Store playable positions for later use
+
     // Store player number
     this.myPlayerNumber = gamedatas.player_number;
     this.firstPlayer = this.myPlayerNumber === 1;
@@ -318,6 +320,12 @@ export class Game {
 
     let cost = "";
     let pos = "";
+
+    // Check if the clicked position is in the list of playable positions
+    const index = this.playable_positions.findIndex((pos) => pos.x == x && pos.y == (!this.firstPlayer ? 8 - parseInt(y) : y));
+    console.log(this.gamedatas.playable_positions, this.playable_positions);
+    if (index === -1) return ;
+
     if (y > 4) {
       this.playerTurn.btnVisible.style.display = "inline-block";
       this.playerTurn.btnHide.style.display = "inline-block";
@@ -348,7 +356,6 @@ export class Game {
   onCardSelect(e) {
     e.preventDefault();
     e.stopPropagation();
-
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
 
     if (!isCurrentPlayerActive) {
@@ -361,9 +368,29 @@ export class Game {
     this.cardSelected = e.currentTarget;
     this.cardSelected.classList.add("selected");
 
+    this.showPlayablePositions(this.playable_positions);
+
     this.bga.statusBar.setTitle(
       _("${you} must select a position on the board"),
     );
+  }
+
+  showPlayablePositions(positions) {
+    // Clear previous highlights
+    document.querySelectorAll(".position").forEach((cell) => {
+      cell.classList.remove("playable");
+    });
+    // Highlight new playable positions
+    positions.forEach((pos) => {
+      let y = pos.y;
+      if (!this.firstPlayer) {
+        y = 8 - parseInt(y); // Mirror Y coordinate for second player
+      }
+      const cell = document.getElementById(`card_${pos.x}_${y}`);
+      if (cell) {
+        cell.classList.add("playable");
+      }
+    });
   }
 
   addCardToHand(card, playerColor) {
@@ -464,7 +491,9 @@ export class Game {
   async notif_cardPlayed(args) {
 
     // Update the board with the new card placement
-    const { card, x, y, player_id, remaining_ap, is_hide } = args;
+    const { card, x, y, player_id, remaining_ap, is_hide, playable_positions } = args;
+
+    this.playable_positions = playable_positions; // Update playable positions after a card is played
 
     // Get the target cell on the board
     let newY = y;

@@ -159,6 +159,8 @@ class Game extends \Bga\GameFramework\Table
             }
         }
 
+        $result['playable_positions'] = $this->getPlayablePositions();
+
         return $result;
     }
 
@@ -312,6 +314,84 @@ class Game extends \Bga\GameFramework\Table
     function getPlayableCards($player_id)
     {
         return $this->cards->getCardsInLocation('hand', $player_id);
+    }
+
+    public function getPlayablePositions(): array
+    {
+        $playablePositions = [];
+
+        // Get all cards currently on the board
+        $cardsOnBoard = $this->cards->getCardsInLocation('board');
+
+        // Build a set of occupied positions for quick lookup
+        $occupiedPositions = [];
+        foreach ($cardsOnBoard as $card) {
+            $occupiedPositions[$card['location_arg']] = true; // location_arg stores "x_y"
+        }
+
+        // Helper to check if a position is occupied
+        $isOccupied = function (int $x, int $y) use ($occupiedPositions): bool {
+            // location_arg is stored as integer: x.y.v concatenated (e.g. 250 = x=2, y=5, v=0)
+            return isset($occupiedPositions["{$x}{$y}0"]) || isset($occupiedPositions["{$x}{$y}1"]);
+        };
+        // $this->dump('occupiedPositions', $occupiedPositions);
+        // $this->dump('test fonction', $isOccupied(2, 5));
+        // Y=4 is the flower row, never playable
+        // Player side: Y=1,2,3 | Opponent side: Y=5,6,7
+        // A position is playable if:
+        // - It is not occupied
+        // - It is not Y=4
+        // - There is no gap between it and Y=4 (all cells between it and Y=4 on the same column must be occupied)
+
+        for ($x = 1; $x <= 5; $x++) {
+            // --- Player side (Y=3 down to Y=1) ---
+            for ($y = 3; $y >= 1; $y--) {
+                if ($isOccupied($x, $y)) {
+                    // Cell is taken, continue deeper
+                    continue;
+                }
+
+                // Check there is no gap: all cells between Y=3 and this Y (exclusive) must be occupied
+                $hasGap = false;
+                for ($checkY = 3; $checkY > $y; $checkY--) {
+                    if (!$isOccupied($x, $checkY)) {
+                        $hasGap = true;
+                        break;
+                    }
+                }
+
+                if (!$hasGap) {
+                    $playablePositions[] = ['x' => $x, 'y' => $y];
+                }
+
+                // Once we find an empty cell, no need to go deeper (would create a gap)
+                break;
+            }
+
+            // --- Opponent side (Y=5 up to Y=7) ---
+            for ($y = 5; $y <= 7; $y++) {
+                if ($isOccupied($x, $y)) {
+                    continue;
+                }
+
+                // Check there is no gap: all cells between Y=5 and this Y (exclusive) must be occupied
+                $hasGap = false;
+                for ($checkY = 5; $checkY < $y; $checkY++) {
+                    if (!$isOccupied($x, $checkY)) {
+                        $hasGap = true;
+                        break;
+                    }
+                }
+
+                if (!$hasGap) {
+                    $playablePositions[] = ['x' => $x, 'y' => $y];
+                }
+
+                break;
+            }
+        }
+
+        return $playablePositions;
     }
 
     /**

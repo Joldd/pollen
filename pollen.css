@@ -24,6 +24,13 @@
 .position {
   background-color: blueviolet;
 }
+.playable {
+  border: 3px solid gold;
+}
+.playable:hover {
+  background-color: purple;
+  cursor: pointer;
+}
 
 .flower1 {
   background-image: url("img/flower1.png");
