@@ -480,7 +480,7 @@ export class Game {
     }
 
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
-    console.log("macarte", card);
+
     const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
 
     if (isCurrentPlayerActive) {
@@ -506,6 +506,10 @@ export class Game {
       if (!cardElement) {
         console.error("Opponent card element not found in hand");
         return;
+      }
+      if (!is_hide) {
+        cardElement.classList.remove(color); // Remove the back class (e.g., bee)
+        cardElement.classList.add(color + (card.type_arg % 100)); // e.g., bee3, bumblebee2...
       }
 
       // Animate the card moving from hand to board
