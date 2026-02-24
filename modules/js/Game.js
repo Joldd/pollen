@@ -115,6 +115,7 @@ class PlayerTurn {
       x: x,
       y: y,
       isHide: isHide,
+      player_number: this.game.myPlayerNumber,
     });
 
     this.game.hidePlayablePositions();
@@ -163,6 +164,7 @@ export class Game {
     this.gamedatas = gamedatas;
 
     this.playable_positions = gamedatas.playable_positions; // Store playable positions for later use
+    this.remaining_ap = gamedatas.remaining_ap; // Store remaining action points for later use
 
     // Store player number
     this.myPlayerNumber = gamedatas.player_number;
@@ -331,7 +333,9 @@ export class Game {
 
     if (y > 4) {
       this.playerTurn.btnVisible.style.display = "inline-block";
-      this.playerTurn.btnHide.style.display = "inline-block";
+      if (this.remaining_ap >= 2) {
+        this.playerTurn.btnHide.style.display = "inline-block";
+      }
       pos = "your own side";
     } else {
       this.playerTurn.btnConfirm.style.display = "inline-block";
@@ -509,6 +513,7 @@ export class Game {
       args;
 
     this.playable_positions = playable_positions; // Update playable positions after a card is played
+    this.remaining_ap = remaining_ap; // Update remaining action points
 
     // Get the target cell on the board
     let newY = y;

@@ -44,7 +44,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     }
 
     #[PossibleAction]
-    public function actPlayCard(int $card_id, int $x, int $y, bool $isHide): void
+    public function actPlayCard(int $card_id, int $x, int $y, bool $isHide, int $player_number): void
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
@@ -67,7 +67,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("This cell is already occupied"));
         }
 
-        $playablePositions = $this->game->getPlayablePositions();
+        $playablePositions = $this->game->getPlayablePositions($player_id, $player_number);
         // Check if it is playable position
         if (!in_array(['x' => $x, 'y' => $y], $playablePositions)) {
             throw new BgaUserException($this->game->_("You cannot play on this position"));
@@ -100,7 +100,22 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
 
-        $playablePositions = $this->game->getPlayablePositions();
+        $is_next = false;
+        // Who is the next player going to be after this action
+        if ($remaining_ap > 0) {
+            // Same player continues if they have AP remaining
+            $next_player_id = $player_id;
+            $next_player_number = $player_number;
+        } else {
+            // Next player if current player has no AP remaining
+            $next_player_id = $this->game->getPlayerAfter($player_id);
+            $next_player_number = $player_number === 1 ? 2 : 1;
+            $this->game->setActionPoints($next_player_id, 2); // Reset AP for next player
+            $remaining_ap = 2; // Reset AP for next player
+            $is_next = true;
+        }
+
+        $playablePositions = $this->game->getPlayablePositions($next_player_id, $next_player_number);
 
         $this->bga->notify->all(
             'cardPlayed',
@@ -116,6 +131,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
                 'remaining_ap' => $remaining_ap,
                 'is_hide' => $isHide,
                 'playable_positions' => $playablePositions,
+                'is_next' => $is_next,
                 'side_desc' => $is_own_side ?
                     clienttranslate('their side') :
                     clienttranslate("opponent's side")
@@ -123,7 +139,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         );
 
         // Check if player has AP remaining
-        if ($remaining_ap > 0) {
+        if (!$is_next) {
             // Stay in same state
             $this->game->gamestate->nextState('stayActive');
         } else {

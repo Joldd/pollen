@@ -159,7 +159,9 @@ class Game extends \Bga\GameFramework\Table
             }
         }
 
-        $result['playable_positions'] = $this->getPlayablePositions();
+        $result['playable_positions'] = $this->getPlayablePositions($current_player_id, $result['player_number']);
+
+        $result['remaining_ap'] = $this->getActionPoints($current_player_id);
 
         return $result;
     }
@@ -316,9 +318,11 @@ class Game extends \Bga\GameFramework\Table
         return $this->cards->getCardsInLocation('hand', $player_id);
     }
 
-    public function getPlayablePositions(): array
+    public function getPlayablePositions($player_id, $player_number): array
     {
         $playablePositions = [];
+
+        $remaining_ap = $this->getActionPoints($player_id);
 
         // Get all cards currently on the board
         $cardsOnBoard = $this->cards->getCardsInLocation('board');
@@ -334,26 +338,29 @@ class Game extends \Bga\GameFramework\Table
             // location_arg is stored as integer: x.y.v concatenated (e.g. 250 = x=2, y=5, v=0)
             return isset($occupiedPositions["{$x}{$y}0"]) || isset($occupiedPositions["{$x}{$y}1"]);
         };
-        // $this->dump('occupiedPositions', $occupiedPositions);
-        // $this->dump('test fonction', $isOccupied(2, 5));
-        // Y=4 is the flower row, never playable
-        // Player side: Y=1,2,3 | Opponent side: Y=5,6,7
-        // A position is playable if:
-        // - It is not occupied
-        // - It is not Y=4
-        // - There is no gap between it and Y=4 (all cells between it and Y=4 on the same column must be occupied)
+
+        if ($player_number === 1) {
+            $mySideY    = [5, 7, +1];
+            $theirSideY = [3, 1, -1];
+            $mySideStart    = 5;
+            $theirSideStart = 3;
+        } else {
+            $mySideY    = [3, 1, -1]; // for($y=3; $y>=1; $y--)
+            $theirSideY = [5, 7, +1]; // for($y=5; $y<=7; $y++)
+            $mySideStart    = 3;
+            $theirSideStart = 5;
+        }
 
         for ($x = 1; $x <= 5; $x++) {
-            // --- Player side (Y=3 down to Y=1) ---
-            for ($y = 3; $y >= 1; $y--) {
-                if ($isOccupied($x, $y)) {
-                    // Cell is taken, continue deeper
-                    continue;
-                }
 
-                // Check there is no gap: all cells between Y=3 and this Y (exclusive) must be occupied
+            // --- Mon côté (toujours jouable si >= 1 AP) ---
+            [$yStart, $yEnd, $yStep] = $mySideY;
+            for ($y = $yStart; $yStep > 0 ? $y <= $yEnd : $y >= $yEnd; $y += $yStep) {
+                if ($isOccupied($x, $y)) continue;
+
                 $hasGap = false;
-                for ($checkY = 3; $checkY > $y; $checkY--) {
+                $checkStep = $yStep > 0 ? 1 : -1;
+                for ($checkY = $mySideStart; $checkY !== $y; $checkY += $checkStep) {
                     if (!$isOccupied($x, $checkY)) {
                         $hasGap = true;
                         break;
@@ -363,20 +370,19 @@ class Game extends \Bga\GameFramework\Table
                 if (!$hasGap) {
                     $playablePositions[] = ['x' => $x, 'y' => $y];
                 }
-
-                // Once we find an empty cell, no need to go deeper (would create a gap)
                 break;
             }
 
-            // --- Opponent side (Y=5 up to Y=7) ---
-            for ($y = 5; $y <= 7; $y++) {
-                if ($isOccupied($x, $y)) {
-                    continue;
-                }
+            // --- Côté adversaire (coûte 2 AP) ---
+            if ($remaining_ap < 2) continue;
 
-                // Check there is no gap: all cells between Y=5 and this Y (exclusive) must be occupied
+            [$yStart, $yEnd, $yStep] = $theirSideY;
+            for ($y = $yStart; $yStep > 0 ? $y <= $yEnd : $y >= $yEnd; $y += $yStep) {
+                if ($isOccupied($x, $y)) continue;
+
                 $hasGap = false;
-                for ($checkY = 5; $checkY < $y; $checkY++) {
+                $checkStep = $yStep > 0 ? 1 : -1;
+                for ($checkY = $theirSideStart; $checkY !== $y; $checkY += $checkStep) {
                     if (!$isOccupied($x, $checkY)) {
                         $hasGap = true;
                         break;
@@ -386,7 +392,6 @@ class Game extends \Bga\GameFramework\Table
                 if (!$hasGap) {
                     $playablePositions[] = ['x' => $x, 'y' => $y];
                 }
-
                 break;
             }
         }
