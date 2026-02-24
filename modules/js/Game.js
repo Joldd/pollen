@@ -116,6 +116,8 @@ class PlayerTurn {
       y: y,
       isHide: isHide,
     });
+
+    this.game.hidePlayablePositions();
   }
 
   onCancel() {
@@ -250,9 +252,9 @@ export class Game {
       const card = gamedatas.hand[card_id];
       this.addCardToHand(card, playerColor);
     }
-    myCards.querySelectorAll(".myCard").forEach((card) => {
-      card.addEventListener("click", (e) => this.onCardSelect(e));
-    });
+    // myCards.querySelectorAll(".myCard").forEach((card) => {
+    //   card.addEventListener("click", (e) => this.onCardSelect(e));
+    // });
 
     // Display cards on the board
     if (gamedatas.board) {
@@ -322,9 +324,10 @@ export class Game {
     let pos = "";
 
     // Check if the clicked position is in the list of playable positions
-    const index = this.playable_positions.findIndex((pos) => pos.x == x && pos.y == (!this.firstPlayer ? 8 - parseInt(y) : y));
-    console.log(this.gamedatas.playable_positions, this.playable_positions);
-    if (index === -1) return ;
+    const index = this.playable_positions.findIndex(
+      (pos) => pos.x == x && pos.y == (!this.firstPlayer ? 8 - parseInt(y) : y),
+    );
+    if (index === -1) return;
 
     if (y > 4) {
       this.playerTurn.btnVisible.style.display = "inline-block";
@@ -393,7 +396,13 @@ export class Game {
     });
   }
 
-  addCardToHand(card, playerColor) {
+  hidePlayablePositions() {
+    document.querySelectorAll(".position").forEach((cell) => {
+      cell.classList.remove("playable");
+    });
+  }
+
+  async addCardToHand(card, playerColor) {
     // Decode card type_arg to get player color and value
     const value = card.type_arg % 100;
     let cardContent = "";
@@ -403,12 +412,18 @@ export class Game {
       cardContent = "Move"; // Movement icon
     }
 
-    const cardDiv = `<div id="card_${card.id}" 
-                          class="card ${card.type} ${playerColor}${cardContent} myCard" 
-                          data-value="${value}">                    
-                    </div>`;
+    const cardElement = document.createElement("div");
+    cardElement.classList.add(
+      "card",
+      card.type,
+      playerColor + cardContent,
+      "myCard",
+    );
+    cardElement.id = `card_${card.id}`;
 
-    myCards.insertAdjacentHTML("beforeend", cardDiv);
+    cardElement.addEventListener("click", (e) => this.onCardSelect(e));
+    myDeck.appendChild(cardElement);
+    await this.animationManager.slideAndAttach(cardElement, myCards);
   }
 
   displayObjectiveCard(card) {
@@ -489,9 +504,9 @@ export class Game {
 
   // TODO: from this point and below, you can write your game notifications handling methods
   async notif_cardPlayed(args) {
-
     // Update the board with the new card placement
-    const { card, x, y, player_id, remaining_ap, is_hide, playable_positions } = args;
+    const { card, x, y, player_id, remaining_ap, is_hide, playable_positions } =
+      args;
 
     this.playable_positions = playable_positions; // Update playable positions after a card is played
 
@@ -556,19 +571,18 @@ export class Game {
     if (args.cards.length > 0) {
       const color = args.cards[0].type_arg[0] == 1 ? "bee" : "bumblebee";
       args.cards.forEach(async (card) => {
-        const type = color + (card.type_arg % 100); // e.g., bee3, bumblebee2...
-        const cardElement = document.createElement("div");
-        cardElement.classList.add("card", type);
-        cardElement.id = `card_${card.id}`;
-        myDeck.appendChild(cardElement);
-        await this.animationManager.slideAndAttach(cardElement, myCards);
+        await this.addCardToHand(card, color);
       });
     }
   }
 
   async notif_cardsDrawnOpponent(args) {
     if (args.count > 0 && !this.playerTurn.isCurrentPlayerActive) {
-      const opponentColor = opponentDeck.children[0].classList.contains("bumblebee") ? "bumblebee" : "bee";
+      const opponentColor = opponentDeck.children[0].classList.contains(
+        "bumblebee",
+      )
+        ? "bumblebee"
+        : "bee";
       for (let i = 0; i < args.count; i++) {
         const cardElement = document.createElement("div");
         cardElement.classList.add("card", opponentColor);

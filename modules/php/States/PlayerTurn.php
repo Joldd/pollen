@@ -82,6 +82,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Determine action cost
         $action_cost = $is_own_side ? 1 : 2;
+        if ($isHide) $action_cost = 2; // Hiding always costs 2 AP
 
         // Check if player has enough action points
         $current_ap = $this->game->getActionPoints($player_id);
