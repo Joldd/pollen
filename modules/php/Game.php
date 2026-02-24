@@ -163,6 +163,12 @@ class Game extends \Bga\GameFramework\Table
 
         $result['remaining_ap'] = $this->getActionPoints($current_player_id);
 
+        // Get last thrown card (if any)
+        $lastThrownCard = $this->getObjectFromDB(
+            "SELECT * FROM card WHERE card_location = 'bin' ORDER BY card_location_arg DESC LIMIT 1"
+        );
+        $result['last_thrown'] = $lastThrownCard;
+
         return $result;
     }
 

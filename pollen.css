@@ -25,6 +25,20 @@
   }
 }
 
+#bin {
+  position: absolute;
+  top : 50%;
+  transform: translateY(-50%);
+  right: 50px;
+  background-color: salmon;
+
+  .card {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}
+
 .position {
   background-color: blueviolet;
 }

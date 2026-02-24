@@ -29,6 +29,7 @@ class PlayerTurn {
     this.btnHide = null;
     this.btnConfirm = null;
     this.btnCancel = null;
+    this.btnDestroy = null;
   }
 
   /**
@@ -65,6 +66,14 @@ class PlayerTurn {
         color: "primary",
       },
     );
+    this.bga.statusBar.addActionButton(
+      _("Throw the card (-1 AP)"),
+      () => this.onDestroy(),
+      {
+        id: "button_destroy_id",
+        color: "primary",
+      },
+    );
     this.bga.statusBar.addActionButton(_("Cancel"), () => this.onCancel(), {
       id: "button_cancel_id",
       color: "alert",
@@ -74,10 +83,12 @@ class PlayerTurn {
     this.btnCancel = document.getElementById("button_cancel_id");
     this.btnVisible = document.getElementById("button_visible_id");
     this.btnHide = document.getElementById("button_hide_id");
+    this.btnDestroy = document.getElementById("button_destroy_id");
     this.btnConfirm.style.display = "none";
     this.btnCancel.style.display = "none";
     this.btnVisible.style.display = "none";
     this.btnHide.style.display = "none";
+    this.btnDestroy.style.display = "none";
   }
 
   /**
@@ -96,9 +107,7 @@ class PlayerTurn {
 
   onConfirm(isHide) {
     if (!this.game.cardSelected || !this.game.positionSelected) {
-      this.bga.showMessage(
-        _("Please select a card and a position before confirming."),
-      );
+      console.log("Please select a card and a position before confirming.");
       return;
     }
 
@@ -135,10 +144,28 @@ class PlayerTurn {
         ? _("${you} must choose a card to play")
         : _("${actplayer} must choose a card to play"),
     );
+    this.game.hidePlayablePositions();
+    this.hideButtons();
+  }
+
+  onDestroy() {
+    if (!this.game.cardSelected) {
+      console.log("Please select a card to throw.");
+      return;
+    }
+    const cardId = this.game.cardSelected.id.split("_")[1];
+    this.bga.actions.performAction("actThrowCard", {
+      card_id: cardId,
+    });
+    this.game.hidePlayablePositions();
+  }
+
+  hideButtons() {
     this.btnConfirm.style.display = "none";
-    this.btnCancel.style.display = "none";
     this.btnVisible.style.display = "none";
     this.btnHide.style.display = "none";
+    this.btnDestroy.style.display = "none";
+    this.btnCancel.style.display = "none";
   }
 }
 
@@ -180,6 +207,7 @@ export class Game {
           <div id="opponentDeck"></div>
         </div>
         <div id="board">
+          <div id="bin" class="card"></div>
         </div>
         <div id="myHand" class="hand">
           <div id="myObjective"></div>
@@ -198,6 +226,8 @@ export class Game {
     const opponentCards = document.getElementById("opponentCards");
     const opponentObjective = document.getElementById("opponentObjective");
     const opponentDeck = document.getElementById("opponentDeck");
+
+    const bin = document.getElementById("bin");
 
     const flowersMap = {};
     gamedatas.flowers.forEach((flower) => {
@@ -294,6 +324,17 @@ export class Game {
       this.updateOpponentInfo(gamedatas.opponent, playerColor);
     }
 
+    // Display last thrown card in the bin
+    console.log("Last thrown card:", gamedatas.last_thrown);
+    if (gamedatas.last_thrown) {
+      const lastThrownCard = gamedatas.last_thrown;
+      const color = lastThrownCard.card_type_arg[0] == 1 ? "bee" : "bumblebee";
+      const type = lastThrownCard.card_type === "movement" ? "Move" : lastThrownCard.card_type_arg % 100;
+      const cardDiv = `<div class="card ${lastThrownCard.card_type} ${color}${type}">                   
+                         </div>`;
+      bin.insertAdjacentHTML("afterbegin", cardDiv);
+    }
+
     // Setup game notifications to handle (see "setupNotifications" method below)
     this.setupNotifications();
   }
@@ -378,8 +419,9 @@ export class Game {
     this.showPlayablePositions(this.playable_positions);
 
     this.bga.statusBar.setTitle(
-      _("${you} must select a position on the board"),
+      _("${you} must select a position on the board or "),
     );
+    this.playerTurn.btnDestroy.style.display = "inline-block";
   }
 
   showPlayablePositions(positions) {
@@ -404,6 +446,18 @@ export class Game {
     document.querySelectorAll(".position").forEach((cell) => {
       cell.classList.remove("playable");
     });
+  }
+
+  async throwCardToBin() {
+    if (!this.cardSelected) {
+      console.log("Please select a card to throw.");
+      return;
+    }
+
+    const cardElement = this.cardSelected;
+    const binElement = document.getElementById("bin");
+
+    await this.animationManager.slideAndAttach(cardElement, binElement);
   }
 
   async addCardToHand(card, playerColor) {
@@ -595,5 +649,32 @@ export class Game {
         await this.animationManager.slideAndAttach(cardElement, opponentCards);
       }
     }
+  }
+
+  async notif_cardThrown(args) {
+    const { card, player_id } = args;
+    const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
+    const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+    let bin = document.getElementById("bin");
+    if (!bin) {
+      console.error("Bin element not found");
+      return;
+    }
+    let cardElement = null;
+    if (isCurrentPlayerActive) {
+      cardElement = document.getElementById(`card_${card.id}`);
+    } else {
+      const type = card.type === "movement" ? "Move" : card.type_arg % 100;
+      cardElement = document.getElementById(`opponentCards`).children[0];
+      cardElement.classList.remove(color); // Remove the back class (e.g., bee)
+      cardElement.classList.add(color + type); // e.g., bee3, bumblebee2...
+    }
+    if (!cardElement) {
+      console.error("Card element not found:", `card_${card.id}`);
+      return;
+    }
+
+    // Animate the card moving from board to bin
+    await this.animationManager.slideAndAttach(cardElement, bin);
   }
 }

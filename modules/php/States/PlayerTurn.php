@@ -44,6 +44,66 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     }
 
     #[PossibleAction]
+    public function actThrowCard(int $card_id): void
+    {
+        // Validate action
+        $player_id = $this->game->getActivePlayerId();
+
+        // Get card info
+        $card = $this->game->cards->getCard($card_id);
+
+        // Verify card belongs to player
+        if ($card['location'] != 'hand' || $card['location_arg'] != $player_id) {
+            throw new BgaUserException($this->game->_("This is not your card"));
+        }
+
+        // Check if player has enough action points
+        $current_ap = $this->game->getActionPoints($player_id);
+        if ($current_ap < 1) {
+            throw new BgaUserException($this->game->_("Not enough action points"));
+        }
+
+        // Spend action points
+        $remaining_ap = $this->game->spendActionPoints($player_id, 1);
+
+        // Throw card to bin
+        $this->game->cards->moveCard($card_id, 'bin', time());
+
+        $number = $card['type_arg'] % 100;
+        if ($card['type'] == 'movement') $number = 'movement';
+
+        $is_next = false;
+        // Who is the next player going to be after this action
+        if ($remaining_ap <= 0) {
+            $next_player_id = $this->game->getPlayerAfter($player_id);
+            $this->game->setActionPoints($next_player_id, 2); // Reset AP for next player
+            $remaining_ap = 2; // Reset AP for next player
+            $is_next = true;
+        }
+
+        $this->bga->notify->all(
+            'cardThrown',
+            clienttranslate('${player_name} throws a card ${number} into the bin'),
+            [
+                'player_id' => $player_id,
+                'player_name' => $this->game->getActivePlayerName(),
+                'card' => $card,
+                'number' => $number,
+                'remaining_ap' => $remaining_ap,              
+            ]
+        );
+
+        // Check if player has AP remaining
+        if (!$is_next) {
+            // Stay in same state
+            $this->game->gamestate->nextState('stayActive');
+        } else {
+            // Go to next player
+            $this->game->gamestate->nextState('nextPlayer');
+        }
+    }
+
+    #[PossibleAction]
     public function actPlayCard(int $card_id, int $x, int $y, bool $isHide, int $player_number): void
     {
         // Validate action
