@@ -117,6 +117,11 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("This is not your card"));
         }
 
+        // Verify card type
+        if ($card['type'] == 'movement') {
+            throw new BgaUserException($this->game->_("You can't play movement cards"));
+        }
+
         // Validate position
         if ($x < 1 || $x > 5 || $y < 1 || $y > 7 || $y == 4) {
             throw new BgaUserException($this->game->_("Invalid position"));

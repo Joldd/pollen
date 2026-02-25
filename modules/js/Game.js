@@ -181,6 +181,7 @@ export class Game {
 
     this.cardSelected = null;
     this.positionSelected = null;
+    this.cardToMove = null;
 
     this.animationManager = new BgaAnimations.Manager({
       animationsActive: () => this.bga.gameui.bgaAnimationsActive(),
@@ -300,9 +301,10 @@ export class Game {
         }
         const cell = document.getElementById(`card_${boardX}_${boardY}`);
         const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+        const myCard = color === playerColor ? "myCard" : "";
         const number = isVisible ? card.type_arg % 100 : "";
         if (cell) {
-          const cardDiv = `<div class="card ${card.type} ${color}${number}">                   
+          const cardDiv = `<div class="card ${card.type} ${color}${number} ${myCard}">                   
                          </div>`;
           cell.insertAdjacentHTML("afterbegin", cardDiv);
         }
@@ -329,7 +331,10 @@ export class Game {
     if (gamedatas.last_thrown) {
       const lastThrownCard = gamedatas.last_thrown;
       const color = lastThrownCard.card_type_arg[0] == 1 ? "bee" : "bumblebee";
-      const type = lastThrownCard.card_type === "movement" ? "Move" : lastThrownCard.card_type_arg % 100;
+      const type =
+        lastThrownCard.card_type === "movement"
+          ? "Move"
+          : lastThrownCard.card_type_arg % 100;
       const cardDiv = `<div class="card ${lastThrownCard.card_type} ${color}${type}">                   
                          </div>`;
       bin.insertAdjacentHTML("afterbegin", cardDiv);
@@ -357,6 +362,21 @@ export class Game {
 
     if (!this.cardSelected) {
       return; // No card selected
+    }
+
+    if (this.cardSelected.classList.contains("movement")) {
+      if (e.currentTarget.children.length === 0) {
+        return; // No card to move in this position
+      }
+      if (!e.currentTarget.children[0].classList.contains("myCard")) {
+        return; // Can't move opponent's card
+      }
+      if (this.cardToMove) {
+        this.cardToMove.classList.remove("selected");
+      }
+      this.cardToMove = e.currentTarget.children[0]; // Store the selected position for movement
+      this.cardToMove.classList.add("selected");
+      return; // Movement cards don't require position selection
     }
 
     const coords = e.currentTarget.id.split("_");
@@ -416,12 +436,33 @@ export class Game {
     this.cardSelected = e.currentTarget;
     this.cardSelected.classList.add("selected");
 
-    this.showPlayablePositions(this.playable_positions);
+    if (this.cardSelected.classList.contains("movement")) {
+      this.hidePlayablePositions();
+      this.bga.statusBar.setTitle(
+        _("${you} must select one of your cards on the board to move it"),
+      );
+      this.showMyCards();
+    } else {
+      this.hideMyCards();
+      this.showPlayablePositions(this.playable_positions);
+      this.bga.statusBar.setTitle(
+        _("${you} must select a position on the board or "),
+      );
+    }
 
-    this.bga.statusBar.setTitle(
-      _("${you} must select a position on the board or "),
-    );
     this.playerTurn.btnDestroy.style.display = "inline-block";
+  }
+
+  showMyCards() {
+    document.querySelectorAll(".myCard").forEach((card) => {
+      card.classList.add("movable");
+    });
+  }
+
+  hideMyCards() {
+    document.querySelectorAll(".myCard").forEach((card) => {
+      card.classList.remove("movable");
+    });
   }
 
   showPlayablePositions(positions) {
@@ -446,6 +487,8 @@ export class Game {
     document.querySelectorAll(".position").forEach((cell) => {
       cell.classList.remove("playable");
     });
+    document.querySelector(".position.selected")?.classList.remove("selected");
+    this.positionSelected = null;
   }
 
   async throwCardToBin() {
