@@ -30,6 +30,7 @@ class PlayerTurn {
     this.btnConfirm = null;
     this.btnCancel = null;
     this.btnDestroy = null;
+    this.btnMove = null;
   }
 
   /**
@@ -74,6 +75,10 @@ class PlayerTurn {
         color: "primary",
       },
     );
+    this.bga.statusBar.addActionButton(_("Move"), () => this.onMove(), {
+      id: "button_move_id",
+      color: "primary",
+    });
     this.bga.statusBar.addActionButton(_("Cancel"), () => this.onCancel(), {
       id: "button_cancel_id",
       color: "alert",
@@ -84,11 +89,13 @@ class PlayerTurn {
     this.btnVisible = document.getElementById("button_visible_id");
     this.btnHide = document.getElementById("button_hide_id");
     this.btnDestroy = document.getElementById("button_destroy_id");
+    this.btnMove = document.getElementById("button_move_id");
     this.btnConfirm.style.display = "none";
     this.btnCancel.style.display = "none";
     this.btnVisible.style.display = "none";
     this.btnHide.style.display = "none";
     this.btnDestroy.style.display = "none";
+    this.btnMove.style.display = "none";
   }
 
   /**
@@ -145,7 +152,21 @@ class PlayerTurn {
         : _("${actplayer} must choose a card to play"),
     );
     this.game.hidePlayablePositions();
+    this.game.hideMyCards();
+    this.game.hideMovablePositions();
     this.hideButtons();
+  }
+
+  onMove() {
+    if (!this.game.cardToMove || !this.game.positionToGo) {
+      console.log("Please select a card to move and a destination position.");
+      return;
+    }
+    this.bga.actions.performAction("actMoveCard", {
+      card_id: this.game.cardToMove.id.split("_")[1],
+      x: this.game.positionToGo.id.split("_")[1],
+      y: this.game.positionToGo.id.split("_")[2],
+    });
   }
 
   onDestroy() {
@@ -166,6 +187,7 @@ class PlayerTurn {
     this.btnHide.style.display = "none";
     this.btnDestroy.style.display = "none";
     this.btnCancel.style.display = "none";
+    this.btnMove.style.display = "none";
   }
 }
 
@@ -182,6 +204,7 @@ export class Game {
     this.cardSelected = null;
     this.positionSelected = null;
     this.cardToMove = null;
+    this.positionToGo = null;
 
     this.animationManager = new BgaAnimations.Manager({
       animationsActive: () => this.bga.gameui.bgaAnimationsActive(),
@@ -350,10 +373,7 @@ export class Game {
   onPositionSelected(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.playerTurn.btnConfirm.style.display = "none";
-    this.playerTurn.btnCancel.style.display = "none";
-    this.playerTurn.btnVisible.style.display = "none";
-    this.playerTurn.btnHide.style.display = "none";
+    this.playerTurn.hideButtons();
 
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
     if (!isCurrentPlayerActive) {
@@ -364,6 +384,23 @@ export class Game {
       return; // No card selected
     }
 
+    const coords = e.currentTarget.id.split("_");
+    const x = coords[1];
+    let y = coords[2];
+
+    //If a card to move is already selected, it means the player is selecting the destination for the movement
+    if (this.cardToMove && e.currentTarget.classList.contains("canGo")) {
+      if (this.positionToGo) {
+        this.positionToGo.classList.remove("selected");
+      }
+      this.positionToGo = e.currentTarget; // Store the selected position for movement
+      this.positionToGo.classList.add("selected");
+      this.playerTurn.btnMove.style.display = "inline-block";
+      this.playerTurn.btnCancel.style.display = "inline-block";
+      this.bga.statusBar.setTitle(_("${you} are about to move a card"));
+    }
+
+    //Selec a card to move if a movement card is selected
     if (this.cardSelected.classList.contains("movement")) {
       if (e.currentTarget.children.length === 0) {
         return; // No card to move in this position
@@ -376,12 +413,13 @@ export class Game {
       }
       this.cardToMove = e.currentTarget.children[0]; // Store the selected position for movement
       this.cardToMove.classList.add("selected");
+      const pos = {
+        x: parseInt(x),
+        y: this.firstPlayer ? parseInt(y) : 8 - parseInt(y),
+      }; // Store original position of the card to move
+      this.showMovablePositions(pos); // Show movable positions for the selected card
       return; // Movement cards don't require position selection
     }
-
-    const coords = e.currentTarget.id.split("_");
-    const x = coords[1];
-    let y = coords[2];
 
     let cost = "";
     let pos = "";
@@ -453,6 +491,37 @@ export class Game {
     this.playerTurn.btnDestroy.style.display = "inline-block";
   }
 
+  showMovablePositions(pos) {
+    // Clear previous highlights
+    document.querySelectorAll(".position").forEach((cell) => {
+      cell.classList.remove("canGo");
+    });
+    // Highlight new movable positions
+    const card1 = document.querySelector(`#card_${pos.x + 1}_${pos.y}`);
+    if (card1) {
+      card1.classList.add("canGo");
+    }
+    const card2 = document.querySelector(`#card_${pos.x - 1}_${pos.y}`);
+    if (card2) {
+      card2.classList.add("canGo");
+    }
+    const card3 = document.querySelector(`#card_${pos.x}_${pos.y + 1}`);
+    if (card3 && pos.y + 1 != 4) {
+      card3.classList.add("canGo");
+    }
+    const card4 = document.querySelector(`#card_${pos.x}_${pos.y - 1}`);
+    if (card4 && pos.y - 1 != 4) {
+      card4.classList.add("canGo");
+    }
+  }
+
+  hideMovablePositions() {
+    document.querySelectorAll(".position").forEach((cell) => {
+      cell.classList.remove("canGo");
+      cell.classList.remove("selected");
+    });
+  }
+
   showMyCards() {
     document.querySelectorAll(".myCard").forEach((card) => {
       card.classList.add("movable");
@@ -462,6 +531,7 @@ export class Game {
   hideMyCards() {
     document.querySelectorAll(".myCard").forEach((card) => {
       card.classList.remove("movable");
+      card.classList.remove("selected");
     });
   }
 
