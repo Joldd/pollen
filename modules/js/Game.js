@@ -162,10 +162,14 @@ class PlayerTurn {
       console.log("Please select a card to move and a destination position.");
       return;
     }
+    const [, x, y] = this.game.cardToMove.parentElement.id.split("_");
+    const cardToMove = this.game.getCardByCoordinates(x, y);
     this.bga.actions.performAction("actMoveCard", {
-      card_id: this.game.cardToMove.id.split("_")[1],
+      card_movement_id: this.game.cardSelected.id.split("_")[1],
+      card_toMove_id: cardToMove.id,
       x: this.game.positionToGo.id.split("_")[1],
       y: this.game.positionToGo.id.split("_")[2],
+      player_number: this.game.myPlayerNumber,
     });
   }
 
@@ -209,6 +213,16 @@ export class Game {
     this.animationManager = new BgaAnimations.Manager({
       animationsActive: () => this.bga.gameui.bgaAnimationsActive(),
     });
+  }
+
+  getCardByCoordinates(x, y) {
+    if (!this.firstPlayer) {
+      y = 8 - parseInt(y); // Mirror Y coordinate for second player
+    }
+    const card = this.gamedatas.board.find(
+      (card) => card.location_arg[0] == x && card.location_arg[1] == y,
+    );
+    return card ?? null;
   }
 
   setup(gamedatas) {
@@ -400,7 +414,7 @@ export class Game {
       this.bga.statusBar.setTitle(_("${you} are about to move a card"));
     }
 
-    //Selec a card to move if a movement card is selected
+    //Select a card to move if a movement card is selected
     if (this.cardSelected.classList.contains("movement")) {
       if (e.currentTarget.children.length === 0) {
         return; // No card to move in this position
@@ -413,6 +427,9 @@ export class Game {
       }
       this.cardToMove = e.currentTarget.children[0]; // Store the selected position for movement
       this.cardToMove.classList.add("selected");
+      this.bga.statusBar.setTitle(
+        _("${you} must select a destination for the movement"),
+      );
       const pos = {
         x: parseInt(x),
         y: this.firstPlayer ? parseInt(y) : 8 - parseInt(y),
@@ -496,21 +513,25 @@ export class Game {
     document.querySelectorAll(".position").forEach((cell) => {
       cell.classList.remove("canGo");
     });
+    let y = pos.y;
+    if (!this.firstPlayer) {
+      y = 8 - parseInt(y); // Mirror Y coordinate for second player
+    }
     // Highlight new movable positions
-    const card1 = document.querySelector(`#card_${pos.x + 1}_${pos.y}`);
+    const card1 = document.querySelector(`#card_${pos.x + 1}_${y}`);
     if (card1) {
       card1.classList.add("canGo");
     }
-    const card2 = document.querySelector(`#card_${pos.x - 1}_${pos.y}`);
+    const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
     if (card2) {
       card2.classList.add("canGo");
     }
-    const card3 = document.querySelector(`#card_${pos.x}_${pos.y + 1}`);
-    if (card3 && pos.y + 1 != 4) {
+    const card3 = document.querySelector(`#card_${pos.x}_${y + 1}`);
+    if (card3 && y + 1 != 4) {
       card3.classList.add("canGo");
     }
-    const card4 = document.querySelector(`#card_${pos.x}_${pos.y - 1}`);
-    if (card4 && pos.y - 1 != 4) {
+    const card4 = document.querySelector(`#card_${pos.x}_${y - 1}`);
+    if (card4 && y - 1 != 4) {
       card4.classList.add("canGo");
     }
   }
@@ -737,6 +758,14 @@ export class Game {
       this.cardSelected = null;
       this.positionSelected = null;
     }
+  }
+
+  async notif_cardMoved(args) {
+    const { cardToMove, cardMovement, x, y, player_id, playable_positions } =
+      args;
+    this.playable_positions = playable_positions; // Update playable positions after a card is moved
+
+    // Get the target cell on the board.
   }
 
   async notif_cardsDrawn(args) {

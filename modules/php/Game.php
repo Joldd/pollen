@@ -324,6 +324,17 @@ class Game extends \Bga\GameFramework\Table
         return $this->cards->getCardsInLocation('hand', $player_id);
     }
 
+    public function getCardAtPosition(int $x, int $y): ?array
+    {
+        $cardsOnBoard = $this->cards->getCardsInLocation('board');
+        foreach ($cardsOnBoard as $card) {
+            if (str_starts_with($card['location_arg'], "{$x}{$y}")) {
+                return $card;
+            }
+        }
+        return null;
+    }
+
     public function getPlayablePositions($player_id, $player_number): array
     {
         $playablePositions = [];
@@ -403,6 +414,151 @@ class Game extends \Bga\GameFramework\Table
         }
 
         return $playablePositions;
+    }
+
+    public function getMovablePositions(string $card_location_arg, int $player_number): array
+    {
+        $srcX = (int)$card_location_arg[0];
+        $srcY = (int)$card_location_arg[1];
+
+        // --- 1. Récupérer toutes les cartes du plateau ---
+        $cardsOnBoard = $this->cards->getCardsInLocation('board');
+
+        $occupiedPositions = [];
+        $cardsByPosition   = [];
+        foreach ($cardsOnBoard as $card) {
+            $occupiedPositions[$card['location_arg']] = true;
+            $pos = substr($card['location_arg'], 0, 2); // "xy"
+            $cardsByPosition[$pos] = $card;
+        }
+
+        $isOccupied = function (int $x, int $y) use ($occupiedPositions): bool {
+            return isset($occupiedPositions["{$x}{$y}0"]) || isset($occupiedPositions["{$x}{$y}1"]);
+        };
+
+        // --- 2. Déterminer le côté du joueur ---
+        if ($player_number === 1) {
+            $mySideYs  = [5, 6, 7];
+            $mySideDir = +1;
+        } else {
+            $mySideYs  = [3, 2, 1];
+            $mySideDir = -1;
+        }
+
+        // Sécurité : la carte doit appartenir au bon côté
+        if (!in_array($srcY, $mySideYs)) {
+            return [];
+        }
+
+        // --- 3. Vérifier que retirer la source ne crée pas de trou ---
+        $wouldCreateHole = function () use ($srcX, $srcY, $isOccupied, $mySideYs, $mySideDir): bool {
+            foreach ($mySideYs as $y) {
+                if ($mySideDir === +1 && $y > $srcY && $isOccupied($srcX, $y)) return true;
+                if ($mySideDir === -1 && $y < $srcY && $isOccupied($srcX, $y)) return true;
+            }
+            return false;
+        };
+
+        if ($wouldCreateHole()) {
+            return [];
+        }
+
+        // --- 4. Simuler le plateau sans la carte source ---
+        $simulatedOccupied = $occupiedPositions;
+        unset($simulatedOccupied["{$srcX}{$srcY}0"]);
+        unset($simulatedOccupied["{$srcX}{$srcY}1"]);
+
+        $isOccupiedSim = function (int $x, int $y) use ($simulatedOccupied): bool {
+            return isset($simulatedOccupied["{$x}{$y}0"]) || isset($simulatedOccupied["{$x}{$y}1"]);
+        };
+
+        // --- 5. Candidats : cases adjacentes (8 directions) ---
+        $directions = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1,  0],
+            [1,  0],
+            [-1, +1],
+            [0, +1],
+            [1, +1],
+        ];
+
+        $yStart = $mySideYs[0]; // case la plus proche des fleurs
+
+        $movablePositions = [];
+
+        foreach ($directions as [$dx, $dy]) {
+            $dstX = $srcX + $dx;
+            $dstY = $srcY + $dy;
+
+            // Rester dans le plateau (x: 1-5, y: 1-7, hors ligne des fleurs y=4)
+            if ($dstX < 1 || $dstX > 5 || $dstY < 1 || $dstY > 7 || $dstY === 4) continue;
+
+            // --- Cas 1 : case vide, doit être sur le côté du joueur ---
+            if (!$isOccupiedSim($dstX, $dstY)) {
+                if (!in_array($dstY, $mySideYs)) continue;
+
+                // Pas de trou entre les fleurs et la destination (sur le plateau simulé)
+                $hasGap = false;
+                $checkY = $yStart;
+                while ($checkY !== $dstY) {
+                    if (!$isOccupiedSim($dstX, $checkY)) {
+                        $hasGap = true;
+                        break;
+                    }
+                    $checkY += $mySideDir;
+                }
+                if (!$hasGap) {
+                    $movablePositions[] = ['x' => $dstX, 'y' => $dstY, 'swap' => false];
+                }
+
+                // --- Cas 2 : case occupée => échange possible si c'est sa propre carte ---
+            } else {
+                if (!in_array($dstY, $mySideYs)) continue; // carte adverse => interdit
+
+                // Vérifier que l'échange ne crée pas de trou pour la carte déplacée en src
+                // (la dst ira en src, src ira en dst => on simule les deux positions échangées)
+                $simulatedAfterSwap = $simulatedOccupied;
+                // La carte source est déjà retirée du simulé ; on retire aussi la carte dst
+                unset($simulatedAfterSwap["{$dstX}{$dstY}0"]);
+                unset($simulatedAfterSwap["{$dstX}{$dstY}1"]);
+                // On place la carte dst à src
+                $simulatedAfterSwap["{$srcX}{$srcY}0"] = true;
+
+                $isOccupiedSwap = function (int $x, int $y) use ($simulatedAfterSwap): bool {
+                    return isset($simulatedAfterSwap["{$x}{$y}0"]) || isset($simulatedAfterSwap["{$x}{$y}1"]);
+                };
+
+                // Pas de trou vers la position dst (carte source qui va là)
+                $hasGapDst = false;
+                $checkY = $yStart;
+                while ($checkY !== $dstY) {
+                    if (!$isOccupiedSwap($dstX, $checkY)) {
+                        $hasGapDst = true;
+                        break;
+                    }
+                    $checkY += $mySideDir;
+                }
+
+                // Pas de trou vers la position src (carte dst qui vient ici)
+                $hasGapSrc = false;
+                $checkY = $yStart;
+                while ($checkY !== $srcY) {
+                    if (!$isOccupiedSwap($srcX, $checkY)) {
+                        $hasGapSrc = true;
+                        break;
+                    }
+                    $checkY += $mySideDir;
+                }
+
+                if (!$hasGapDst && !$hasGapSrc) {
+                    $movablePositions[] = ['x' => $dstX, 'y' => $dstY, 'swap' => true];
+                }
+            }
+        }
+
+        return $movablePositions;
     }
 
     /**
