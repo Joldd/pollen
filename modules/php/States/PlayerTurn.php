@@ -249,6 +249,9 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("This cell is already occupied"));
         }
 
+        $old_x = $cardToMove['location_arg'][0];
+        $old_y = $cardToMove['location_arg'][1];
+
         $movablePositions = $this->game->getMovablePositions($cardToMove['location_arg'], $player_number);
         if ($player_number == 2) {
             // $movablePositions = array_map(function ($pos) {
@@ -332,6 +335,8 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
                 'cardMovement' => $cardMovement,
                 'x' => $x,
                 'y' => $y,
+                'old_x' => $old_x,
+                'old_y' => $old_y,
                 'action_type' => $action_type,
                 'action_cost' => $action_cost,
                 'remaining_ap' => $remaining_ap,

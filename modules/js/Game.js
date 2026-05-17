@@ -171,6 +171,7 @@ class PlayerTurn {
       y: this.game.positionToGo.id.split("_")[2],
       player_number: this.game.myPlayerNumber,
     });
+    this.game.hideMovablePositions();
   }
 
   onDestroy() {
@@ -519,20 +520,36 @@ export class Game {
     }
     // Highlight new movable positions
     const card1 = document.querySelector(`#card_${pos.x + 1}_${y}`);
-    if (card1) {
+    if (card1 && card1.children.length === 0) {
       card1.classList.add("canGo");
     }
     const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
-    if (card2) {
+    if (card2 && card2.children.length === 0) {
       card2.classList.add("canGo");
     }
     const card3 = document.querySelector(`#card_${pos.x}_${y + 1}`);
-    if (card3 && y + 1 != 4) {
+    if (card3 && card3.children.length === 0 && y + 1 != 4) {
       card3.classList.add("canGo");
     }
     const card4 = document.querySelector(`#card_${pos.x}_${y - 1}`);
-    if (card4 && y - 1 != 4) {
+    if (card4 && card4.children.length === 0 && y - 1 != 4) {
       card4.classList.add("canGo");
+    }
+    const card5 = document.querySelector(`#card_${pos.x + 1}_${y + 1}`);
+    if (card5 && card5.children.length === 0 && y + 1 != 4) {
+      card5.classList.add("canGo");
+    }
+    const card6 = document.querySelector(`#card_${pos.x - 1}_${y + 1}`);
+    if (card6 && card6.children.length === 0 && y + 1 != 4) {
+      card6.classList.add("canGo");
+    }
+    const card7 = document.querySelector(`#card_${pos.x + 1}_${y - 1}`);
+    if (card7 && card7.children.length === 0 && y - 1 != 4) {
+      card7.classList.add("canGo");
+    }
+    const card8 = document.querySelector(`#card_${pos.x - 1}_${y - 1}`);
+    if (card8 && card8.children.length === 0 && y - 1 != 4) {
+      card8.classList.add("canGo");
     }
   }
 
@@ -761,11 +778,69 @@ export class Game {
   }
 
   async notif_cardMoved(args) {
-    const { cardToMove, cardMovement, x, y, player_id, playable_positions } =
-      args;
-    this.playable_positions = playable_positions; // Update playable positions after a card is moved
+    const {
+      cardToMove,
+      cardMovement,
+      x,
+      y,
+      player_id,
+      playable_positions,
+      remaining_ap,
+      old_x,
+      old_y,
+    } = args;
 
-    // Get the target cell on the board.
+    const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
+    const color = cardToMove.type_arg[0] == 1 ? "bee" : "bumblebee";
+
+    this.playable_positions = playable_positions; // Update playable positions after a card is moved
+    this.remaining_ap = remaining_ap; // Update remaining action points
+
+    // Get the target cell on the board
+    let realOldY = old_y;
+    let realY = y;
+    if (!this.firstPlayer) {
+      realOldY = 8 - parseInt(old_y); // Mirror Y coordinate for second player
+      realY = 8 - parseInt(y); // Mirror Y coordinate for second player
+    }
+    const cardElement = document.getElementById(`card_${old_x}_${realOldY}`)
+      .children[0]; // Assuming the card to move is the first child of the cell
+    const targetCell = document.getElementById(`card_${x}_${realY}`);
+
+    if (!cardElement) {
+      console.error("Card element not found:", `card_${old_x}_${realOldY}`);
+      return;
+    }
+
+    // Animate the card moving from hand to board
+    await this.animationManager.slideAndAttach(cardElement, targetCell);
+
+    // Throw the card movement to the bin
+    let bin = document.getElementById("bin");
+    let cardElementMovement = null;
+    if (isCurrentPlayerActive) {
+      cardElementMovement = document.getElementById(`card_${cardMovement.id}`);
+    } else {
+      cardElementMovement =
+        document.getElementById(`opponentCards`).children[0];
+      cardElementMovement.classList.remove(color); // Remove the back class (e.g., bee)
+      cardElementMovement.classList.add(color + "Move"); // movement card
+    }
+    if (!cardElementMovement) {
+      console.error("Card element not found:", `card_${cardMovement.id}`);
+      return;
+    }
+
+    // Clear selection if it's the current player
+    if (isCurrentPlayerActive) {
+      this.cardSelected = null;
+      this.positionSelected = null;
+      this.cardToMove = null;
+      this.positionToGo = null;
+    }
+
+    // Animate the card moving from board to bin
+    await this.animationManager.slideAndAttach(cardElementMovement, bin);
   }
 
   async notif_cardsDrawn(args) {
