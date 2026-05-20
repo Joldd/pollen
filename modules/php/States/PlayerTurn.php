@@ -214,7 +214,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     }
 
     #[PossibleAction]
-    public function actMoveCard(int $card_movement_id, int $card_toMove_id, int $x, int $y, int $player_number): void
+    public function actMoveCard(int $card_movement_id, int $card_toMove_id, ?int $card_toSwap_id, ?int $x, ?int $y, int $player_number): void
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
@@ -222,13 +222,22 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Get card info
         $cardToMove = $this->game->cards->getCard($card_toMove_id);
         $cardMovement = $this->game->cards->getCard($card_movement_id);
-
+        $cardToSwap = null;
+        if ($card_toSwap_id !== null) {
+            $cardToSwap = $this->game->cards->getCard($card_toSwap_id);
+            $x = $cardToSwap['location_arg'][0];
+            $y = $cardToSwap['location_arg'][1];
+        }
+        
         // Verify card belongs to player
         if ($cardToMove['location'] != 'board' || $cardToMove['type_arg'][0] != $player_number) {
             throw new BgaUserException($this->game->_("This is not your card"));
         }
         if ($cardMovement['location'] != 'hand' || $cardMovement['location_arg'] != $player_id) {
-            throw new BgaUserException($this->game->_("This is not your card"));
+            throw new BgaUserException($this->game->_("This is not your movement card"));
+        }
+        if ($cardToSwap !== null && ($cardToSwap['location'] != 'board' || $cardToSwap['type_arg'][0] != $player_number)) {
+            throw new BgaUserException($this->game->_("You can only swap with your own card"));
         }
 
         // Verify card type
@@ -238,15 +247,13 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         if ($cardMovement['type'] != 'movement') {
             throw new BgaUserException($this->game->_("You must use a movement card to move a card"));
         }
+        if ($cardToSwap !== null && $cardToSwap['type'] == 'movement') {
+            throw new BgaUserException($this->game->_("You can't swap movement cards"));
+        }
 
         // Validate position
         if ($x < 1 || $x > 5 || $y < 1 || $y > 7 || $y == 4) {
             throw new BgaUserException($this->game->_("Invalid position"));
-        }
-
-        // Check if cell is occupied
-        if ($this->isCellOccupied($x, $y)) {
-            throw new BgaUserException($this->game->_("This cell is already occupied"));
         }
 
         $old_x = $cardToMove['location_arg'][0];
@@ -271,10 +278,6 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         if (!$isPlayable) {
             throw new BgaUserException($this->game->_("You cannot move on this position"));
         }
-        // Check if move is a swap of two cards
-        $isSwap = $movablePositions["{$x}{$y}"]['swap'] ?? false;
-        $cardToSwap = $this->game->getCardAtPosition($x, $y);
-        $cardToSwapId = $cardToSwap['id'] ?? null;
 
         // Determine action type based on position
         $players = $this->game->loadPlayersBasicInfos();
@@ -301,8 +304,8 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Throw card movement to bin
         $this->game->cards->moveCard($card_movement_id, 'bin', time());
         // If it's a swap, move the swapped card to the new position
-        if ($isSwap && $cardToSwapId) {
-            $this->game->cards->moveCard($cardToSwapId, 'board', $cardToMove['location_arg']);
+        if ($cardToSwap !== null) {
+            $this->game->cards->moveCard($card_toSwap_id, 'board', $old_x * 100 + $old_y * 10 + 0);
         }
 
         // Notify all players
@@ -333,6 +336,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
                 'player_name' => $this->game->getActivePlayerName(),
                 'cardToMove' => $cardToMove,
                 'cardMovement' => $cardMovement,
+                'cardToSwap' => $cardToSwap,
                 'x' => $x,
                 'y' => $y,
                 'old_x' => $old_x,
@@ -340,7 +344,6 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
                 'action_type' => $action_type,
                 'action_cost' => $action_cost,
                 'remaining_ap' => $remaining_ap,
-                'is_swap' => $isSwap,
                 'playable_positions' => $playablePositions,
                 'is_next' => $is_next,
                 'side_desc' => $is_own_side ?

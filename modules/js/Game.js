@@ -151,6 +151,9 @@ class PlayerTurn {
         ? _("${you} must choose a card to play")
         : _("${actplayer} must choose a card to play"),
     );
+    this.game.cardToSwap = null;
+    this.game.cardToMove = null;
+    this.game.positionToGo = null;
     this.game.hidePlayablePositions();
     this.game.hideMyCards();
     this.game.hideMovablePositions();
@@ -158,17 +161,18 @@ class PlayerTurn {
   }
 
   onMove() {
-    if (!this.game.cardToMove || !this.game.positionToGo) {
+    if (!this.game.cardToMove || (!this.game.positionToGo && !this.game.cardToSwap)) {
       console.log("Please select a card to move and a destination position.");
       return;
     }
-    const [, x, y] = this.game.cardToMove.parentElement.id.split("_");
-    const cardToMove = this.game.getCardByCoordinates(x, y);
+    const cardToMoveId = this.game.cardToMove.id.split("_")[1];
+    const cardToSwapId = this.game.cardToSwap ? this.game.cardToSwap.id.split("_")[1] : null;
     this.bga.actions.performAction("actMoveCard", {
       card_movement_id: this.game.cardSelected.id.split("_")[1],
-      card_toMove_id: cardToMove.id,
-      x: this.game.positionToGo.id.split("_")[1],
-      y: this.game.positionToGo.id.split("_")[2],
+      card_toMove_id: cardToMoveId,
+      card_toSwap_id: this.game.cardToSwap ? cardToSwapId : null,
+      x: this.game.positionToGo ? this.game.positionToGo.id.split("_")[1] : null,
+      y: this.game.positionToGo ? this.game.positionToGo.id.split("_")[2] : null,
       player_number: this.game.myPlayerNumber,
     });
     this.game.hideMovablePositions();
@@ -341,8 +345,9 @@ export class Game {
         const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
         const myCard = color === playerColor ? "myCard" : "";
         const number = isVisible ? card.type_arg % 100 : "";
+        const cardId = color === playerColor ? "card_" + card.id : "";
         if (cell) {
-          const cardDiv = `<div class="card ${card.type} ${color}${number} ${myCard}">                   
+          const cardDiv = `<div id="${cardId}" class="card ${card.type} ${color}${number} ${myCard}">                   
                          </div>`;
           cell.insertAdjacentHTML("afterbegin", cardDiv);
         }
@@ -388,6 +393,7 @@ export class Game {
   onPositionSelected(e) {
     e.preventDefault();
     e.stopPropagation();
+
     this.playerTurn.hideButtons();
 
     const isCurrentPlayerActive = this.playerTurn.isCurrentPlayerActive;
@@ -408,11 +414,28 @@ export class Game {
       if (this.positionToGo) {
         this.positionToGo.classList.remove("selected");
       }
-      this.positionToGo = e.currentTarget; // Store the selected position for movement
-      this.positionToGo.classList.add("selected");
-      this.playerTurn.btnMove.style.display = "inline-block";
-      this.playerTurn.btnCancel.style.display = "inline-block";
-      this.bga.statusBar.setTitle(_("${you} are about to move a card"));
+      if (
+        e.currentTarget.children.length > 0 &&
+        e.currentTarget.children[0].classList.contains("myCard")
+      ) {
+        //The player is selecting a card to swap with the card to move
+        if (this.cardToSwap) {
+          this.cardToSwap.classList.remove("selected");
+        }
+        this.cardToSwap = e.currentTarget.children[0];
+        this.cardToSwap.classList.add("selected");
+        this.bga.statusBar.setTitle(_("${you} are about to swap two cards"));
+        this.playerTurn.btnMove.style.display = "inline-block";
+        this.playerTurn.btnCancel.style.display = "inline-block";
+        this.hideMovablePositions();
+      } else {
+        this.positionToGo = e.currentTarget; // Store the selected position for movement
+        this.positionToGo.classList.add("selected");
+        this.playerTurn.btnMove.style.display = "inline-block";
+        this.playerTurn.btnCancel.style.display = "inline-block";
+        this.bga.statusBar.setTitle(_("${you} are about to move a card"));
+        this.cardToSwap = null;
+      }
     }
 
     //Select a card to move if a movement card is selected
@@ -420,6 +443,7 @@ export class Game {
       if (e.currentTarget.children.length === 0) {
         return; // No card to move in this position
       }
+      if (this.cardToSwap) return; // Can't select a new card to move if a card to swap is already selected
       if (!e.currentTarget.children[0].classList.contains("myCard")) {
         return; // Can't move opponent's card
       }
@@ -520,35 +544,73 @@ export class Game {
     }
     // Highlight new movable positions
     const card1 = document.querySelector(`#card_${pos.x + 1}_${y}`);
-    if (card1 && card1.children.length === 0) {
+    if (
+      card1 &&
+      (card1.children.length === 0 ||
+        card1.children[0].classList.contains("myCard"))
+    ) {
       card1.classList.add("canGo");
     }
     const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
-    if (card2 && card2.children.length === 0) {
+    if (
+      card2 &&
+      (card2.children.length === 0 ||
+        card2.children[0].classList.contains("myCard"))
+    ) {
       card2.classList.add("canGo");
     }
     const card3 = document.querySelector(`#card_${pos.x}_${y + 1}`);
-    if (card3 && card3.children.length === 0 && y + 1 != 4) {
+    if (
+      card3 &&
+      (card3.children.length === 0 ||
+        card3.children[0].classList.contains("myCard")) &&
+      y + 1 != 4
+    ) {
       card3.classList.add("canGo");
     }
     const card4 = document.querySelector(`#card_${pos.x}_${y - 1}`);
-    if (card4 && card4.children.length === 0 && y - 1 != 4) {
+    if (
+      card4 &&
+      (card4.children.length === 0 ||
+        card4.children[0].classList.contains("myCard")) &&
+      y - 1 != 4
+    ) {
       card4.classList.add("canGo");
     }
     const card5 = document.querySelector(`#card_${pos.x + 1}_${y + 1}`);
-    if (card5 && card5.children.length === 0 && y + 1 != 4) {
+    if (
+      card5 &&
+      (card5.children.length === 0 ||
+        card5.children[0].classList.contains("myCard")) &&
+      y + 1 != 4
+    ) {
       card5.classList.add("canGo");
     }
     const card6 = document.querySelector(`#card_${pos.x - 1}_${y + 1}`);
-    if (card6 && card6.children.length === 0 && y + 1 != 4) {
+    if (
+      card6 &&
+      (card6.children.length === 0 ||
+        card6.children[0].classList.contains("myCard")) &&
+      y + 1 != 4
+    ) {
       card6.classList.add("canGo");
     }
     const card7 = document.querySelector(`#card_${pos.x + 1}_${y - 1}`);
-    if (card7 && card7.children.length === 0 && y - 1 != 4) {
+    if (
+      card7 &&
+      (card7.children.length === 0 ||
+        card7.children[0].classList.contains("myCard")) &&
+      y - 1 != 4
+    ) {
       card7.classList.add("canGo");
     }
     const card8 = document.querySelector(`#card_${pos.x - 1}_${y - 1}`);
-    if (card8 && card8.children.length === 0 && y - 1 != 4) {
+    if (
+      card8 &&
+      (card8.children.length === 0 ||
+        card8.children[0].classList.contains("myCard")) &&
+      y - 1 != 4
+    ) {
       card8.classList.add("canGo");
     }
   }
@@ -630,7 +692,9 @@ export class Game {
     );
     cardElement.id = `card_${card.id}`;
 
-    cardElement.addEventListener("click", (e) => this.onCardSelect(e));
+    const onCardSelectHandler = (e) => this.onCardSelect(e);
+    cardElement.cardSelectHandler = onCardSelectHandler;
+    cardElement.addEventListener("click", onCardSelectHandler);
     myDeck.appendChild(cardElement);
     await this.animationManager.slideAndAttach(cardElement, myCards);
   }
@@ -738,10 +802,14 @@ export class Game {
     if (isCurrentPlayerActive) {
       // Get the card element (currently in hand)
       const cardElement = document.getElementById(`card_${card.id}`);
-
       if (!cardElement) {
         console.error("Card element not found:", `card_${card.id}`);
         return;
+      }
+
+      if (cardElement.cardSelectHandler) {
+        cardElement.removeEventListener("click", cardElement.cardSelectHandler);
+        delete cardElement.cardSelectHandler;
       }
 
       // Animate the card moving from hand to board
@@ -781,6 +849,7 @@ export class Game {
     const {
       cardToMove,
       cardMovement,
+      cardToSwap,
       x,
       y,
       player_id,
@@ -836,6 +905,7 @@ export class Game {
       this.cardSelected = null;
       this.positionSelected = null;
       this.cardToMove = null;
+      this.cardToSwap = null;
       this.positionToGo = null;
     }
 

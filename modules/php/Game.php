@@ -256,8 +256,8 @@ class Game extends \Bga\GameFramework\Table
             // 1 card with value 5
             $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 5, 'nbr' => 1);
 
-            // 2 movement cards
-            $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 2);
+            // 20 movement cards for test (2 normaly)
+            $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 20);
 
             // Create cards in this player's personal deck
             $player_deck = 'deck_' . $player_id;
@@ -450,20 +450,7 @@ class Game extends \Bga\GameFramework\Table
             return [];
         }
 
-        // --- 3. Vérifier que retirer la source ne crée pas de trou ---
-        $wouldCreateHole = function () use ($srcX, $srcY, $isOccupied, $mySideYs, $mySideDir): bool {
-            foreach ($mySideYs as $y) {
-                if ($mySideDir === +1 && $y > $srcY && $isOccupied($srcX, $y)) return true;
-                if ($mySideDir === -1 && $y < $srcY && $isOccupied($srcX, $y)) return true;
-            }
-            return false;
-        };
-
-        if ($wouldCreateHole()) {
-            return [];
-        }
-
-        // --- 4. Simuler le plateau sans la carte source ---
+        // --- 3. Simuler le plateau sans la carte source ---
         $simulatedOccupied = $occupiedPositions;
         unset($simulatedOccupied["{$srcX}{$srcY}0"]);
         unset($simulatedOccupied["{$srcX}{$srcY}1"]);
@@ -472,7 +459,7 @@ class Game extends \Bga\GameFramework\Table
             return isset($simulatedOccupied["{$x}{$y}0"]) || isset($simulatedOccupied["{$x}{$y}1"]);
         };
 
-        // --- 5. Candidats : cases adjacentes (8 directions) ---
+        // --- 4. Candidats : cases adjacentes (8 directions) ---
         $directions = [
             [-1, -1],
             [0, -1],
@@ -513,9 +500,18 @@ class Game extends \Bga\GameFramework\Table
                     $movablePositions[] = ['x' => $dstX, 'y' => $dstY, 'swap' => false];
                 }
 
-                // --- Cas 2 : case occupée => échange possible si c'est sa propre carte ---
+                // --- Cas 2 : case occupée => échange possible seulement avec sa propre carte ---
             } else {
                 if (!in_array($dstY, $mySideYs)) continue; // carte adverse => interdit
+
+                $cardAtDestination = $cardsByPosition["{$dstX}{$dstY}"] ?? null;
+                if ($cardAtDestination === null) {
+                    continue;
+                }
+
+                if ((int)$cardAtDestination['type_arg'][0] !== $player_number) {
+                    continue;
+                }
 
                 // Vérifier que l'échange ne crée pas de trou pour la carte déplacée en src
                 // (la dst ira en src, src ira en dst => on simule les deux positions échangées)
