@@ -551,12 +551,15 @@ export class Game {
     let diffY = 1;
     if (!this.firstPlayer) {
       y = 8 - parseInt(y); // Mirror Y coordinate for second player
-      diffY = -1;
+      // diffY = -1;
     }
+    const cardInFront = this.getCardByCoordinates(pos.x, y + diffY); // Check if there's a card in front of the card to move
+    console.log("Card in front:", cardInFront);
     // Highlight new movable positions
     const card1 = document.querySelector(`#card_${pos.x + 1}_${y}`);
     if (
       card1 &&
+      (!cardInFront || card1.children.length > 0) &&
       (this.getCardByCoordinates(pos.x + 1, y - diffY) || y - diffY === 4) &&
       (card1.children.length === 0 ||
         card1.children[0].classList.contains("myCard"))
@@ -566,6 +569,7 @@ export class Game {
     const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
     if (
       card2 &&
+      (!cardInFront || card2.children.length > 0) &&
       (this.getCardByCoordinates(pos.x - 1, y - diffY) || y - diffY === 4) &&
       (card2.children.length === 0 ||
         card2.children[0].classList.contains("myCard"))
@@ -591,6 +595,7 @@ export class Game {
     const card5 = document.querySelector(`#card_${pos.x + 1}_${y + 1}`);
     if (
       card5 &&
+      (!cardInFront || card5.children.length > 0) &&
       (this.getCardByCoordinates(pos.x + 1, y + 1 - diffY) ||
         y + 1 - diffY === 4) &&
       (card5.children.length === 0 ||
@@ -601,6 +606,7 @@ export class Game {
     const card6 = document.querySelector(`#card_${pos.x - 1}_${y + 1}`);
     if (
       card6 &&
+      (!cardInFront || card6.children.length > 0) &&
       (this.getCardByCoordinates(pos.x - 1, y + 1 - diffY) ||
         y + 1 - diffY === 4) &&
       (card6.children.length === 0 ||
@@ -611,6 +617,7 @@ export class Game {
     const card7 = document.querySelector(`#card_${pos.x + 1}_${y - 1}`);
     if (
       card7 &&
+      (!cardInFront || card7.children.length > 0) &&
       (this.getCardByCoordinates(pos.x + 1, y - 1 - diffY) ||
         y - 1 - diffY === 4) &&
       (card7.children.length === 0 ||
@@ -621,6 +628,7 @@ export class Game {
     const card8 = document.querySelector(`#card_${pos.x - 1}_${y - 1}`);
     if (
       card8 &&
+      (!cardInFront || card8.children.length > 0) &&
       (this.getCardByCoordinates(pos.x - 1, y - 1 - diffY) ||
         y - 1 - diffY === 4) &&
       (card8.children.length === 0 ||

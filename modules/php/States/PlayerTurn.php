@@ -261,7 +261,9 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $old_x = (int)$cardToMove['location_arg'][0];
         $old_y = (int)$cardToMove['location_arg'][1];
 
-        $movablePositions = $this->game->getMovablePositions($cardToMove['location_arg'], $player_number);
+        $isSwap = $card_toSwap_id !== null;
+
+        $movablePositions = $this->game->getMovablePositions($cardToMove['location_arg'], $player_number, $isSwap);
 
         // Check if it is playable position
         $isPlayable = false;
@@ -297,12 +299,14 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $remaining_ap = $this->game->spendActionPoints($player_id, $action_cost);
 
         // Move card on the board
-        $this->game->cards->moveCard($card_toMove_id, 'board', $x * 100 + $y * 10 + 0);
+        $faceToMove = (int)$cardToMove['location_arg'][2];
+        $this->game->cards->moveCard($card_toMove_id, 'board', $x * 100 + $y * 10 + $faceToMove);
         // Throw card movement to bin
         $this->game->cards->moveCard($card_movement_id, 'bin', time());
         // If it's a swap, move the swapped card to the new position
         if ($cardToSwap !== null) {
-            $this->game->cards->moveCard($card_toSwap_id, 'board', $old_x * 100 + $old_y * 10 + 0);
+            $faceToSwap = (int)$cardToSwap['location_arg'][2];
+            $this->game->cards->moveCard($card_toSwap_id, 'board', $old_x * 100 + $old_y * 10 + $faceToSwap);
         }
 
         // Notify all players

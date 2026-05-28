@@ -423,7 +423,7 @@ class Game extends \Bga\GameFramework\Table
      * @param int    $player_number 1 ou 2
      * @return array  Liste de ['x' => int, 'y' => int]
      */
-    public function getMovablePositions(string $location_arg, int $player_number): array
+    public function getMovablePositions(string $location_arg, int $player_number, bool $isSwap): array
     {
         $cur_x = (int)$location_arg[0];
         $cur_y = (int)$location_arg[1];
@@ -456,7 +456,7 @@ class Game extends \Bga\GameFramework\Table
             }
 
             // Pas de trous (en tenant compte que la case source sera libérée)
-            if (!$this->isValidDestination($nx, $ny, $cur_x, $cur_y)) {
+            if (!$this->isValidDestination($nx, $ny, $cur_x, $cur_y, $isSwap)) {
                 continue;
             }
 
@@ -471,16 +471,40 @@ class Game extends \Bga\GameFramework\Table
      * La case source (src_x, src_y) est considérée comme libérée.
      * Les cartes adverses comptent comme support.
      */
-    private function isValidDestination(int $nx, int $ny, int $src_x, int $src_y): bool
+    private function isValidDestination(int $nx, int $ny, int $src_x, int $src_y, bool $isSwap): bool
     {
+        // Vérifier que libérer la source ne crée pas un trou
+        // Seulement si ce n'est pas un swap (la carte swappée remplace la source)
+        if (!$isSwap) {
+            if ($src_y > 4) {
+                $cardAboveSrc = $this->getCardAtPosition($src_x, $src_y + 1);
+                if ($cardAboveSrc !== null) {
+                    $destinationFillsGap = ($nx === $src_x && $ny === $src_y + 1);
+                    if (!$destinationFillsGap) {
+                        return false;
+                    }
+                }
+            }
+
+            if ($src_y < 4) {
+                $cardBelowSrc = $this->getCardAtPosition($src_x, $src_y - 1);
+                if ($cardBelowSrc !== null) {
+                    $destinationFillsGap = ($nx === $src_x && $ny === $src_y - 1);
+                    if (!$destinationFillsGap) {
+                        return false;
+                    }
+                }
+            }
+        }
+
         // Côté joueur 1 : y > 4, les cartes poussent de y=5 vers y=7
         if ($ny > 4) {
             if ($ny === 5) {
-                return true; // Toujours adjacent aux fleurs
+                return true;
             }
-            // La case en-dessous (ny-1) doit être occupée après déplacement
+            // La case en-dessous est la source : en cas de swap elle sera occupée
             if ($nx === $src_x && ($ny - 1) === $src_y) {
-                return false; // La source sera libérée => trou
+                return $isSwap; // false si déplacement simple, true si swap
             }
             return $this->getCardAtPosition($nx, $ny - 1) !== null;
         }
@@ -488,16 +512,14 @@ class Game extends \Bga\GameFramework\Table
         // Côté joueur 2 : y < 4, les cartes poussent de y=3 vers y=1
         if ($ny < 4) {
             if ($ny === 3) {
-                return true; // Toujours adjacent aux fleurs
+                return true;
             }
-            // La case au-dessus (ny+1) doit être occupée après déplacement
+            // La case au-dessus est la source : en cas de swap elle sera occupée
             if ($nx === $src_x && ($ny + 1) === $src_y) {
-                return false; // La source sera libérée => trou
+                return $isSwap;
             }
             return $this->getCardAtPosition($nx, $ny + 1) !== null;
         }
-
-        return false;
     }
 
     /**
