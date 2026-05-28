@@ -225,10 +225,12 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $cardToSwap = null;
         if ($card_toSwap_id !== null) {
             $cardToSwap = $this->game->cards->getCard($card_toSwap_id);
-            $x = $cardToSwap['location_arg'][0];
-            $y = $cardToSwap['location_arg'][1];
+            $x = (int)$cardToSwap['location_arg'][0];
+            $y = (int)$cardToSwap['location_arg'][1];
+        } else if ($player_number == 2) {
+            $y = 8 - $y;
         }
-        
+
         // Verify card belongs to player
         if ($cardToMove['location'] != 'board' || $cardToMove['type_arg'][0] != $player_number) {
             throw new BgaUserException($this->game->_("This is not your card"));
@@ -256,16 +258,11 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("Invalid position"));
         }
 
-        $old_x = $cardToMove['location_arg'][0];
-        $old_y = $cardToMove['location_arg'][1];
+        $old_x = (int)$cardToMove['location_arg'][0];
+        $old_y = (int)$cardToMove['location_arg'][1];
 
         $movablePositions = $this->game->getMovablePositions($cardToMove['location_arg'], $player_number);
-        if ($player_number == 2) {
-            // $movablePositions = array_map(function ($pos) {
-            //     return ['x' => $pos['x'], 'y' => 8 - $pos['y']]; // Mirror Y coordinate for second player
-            // }, $movablePositions);
-            $y = 8 - $y; // Mirror Y coordinate for second player
-        }
+
         // Check if it is playable position
         $isPlayable = false;
         foreach ($movablePositions as $pos) {

@@ -161,18 +161,27 @@ class PlayerTurn {
   }
 
   onMove() {
-    if (!this.game.cardToMove || (!this.game.positionToGo && !this.game.cardToSwap)) {
+    if (
+      !this.game.cardToMove ||
+      (!this.game.positionToGo && !this.game.cardToSwap)
+    ) {
       console.log("Please select a card to move and a destination position.");
       return;
     }
     const cardToMoveId = this.game.cardToMove.id.split("_")[1];
-    const cardToSwapId = this.game.cardToSwap ? this.game.cardToSwap.id.split("_")[1] : null;
+    const cardToSwapId = this.game.cardToSwap
+      ? this.game.cardToSwap.id.split("_")[1]
+      : null;
     this.bga.actions.performAction("actMoveCard", {
       card_movement_id: this.game.cardSelected.id.split("_")[1],
       card_toMove_id: cardToMoveId,
       card_toSwap_id: this.game.cardToSwap ? cardToSwapId : null,
-      x: this.game.positionToGo ? this.game.positionToGo.id.split("_")[1] : null,
-      y: this.game.positionToGo ? this.game.positionToGo.id.split("_")[2] : null,
+      x: this.game.positionToGo
+        ? this.game.positionToGo.id.split("_")[1]
+        : null,
+      y: this.game.positionToGo
+        ? this.game.positionToGo.id.split("_")[2]
+        : null,
       player_number: this.game.myPlayerNumber,
     });
     this.game.hideMovablePositions();
@@ -539,13 +548,16 @@ export class Game {
       cell.classList.remove("canGo");
     });
     let y = pos.y;
+    let diffY = 1;
     if (!this.firstPlayer) {
       y = 8 - parseInt(y); // Mirror Y coordinate for second player
+      diffY = -1;
     }
     // Highlight new movable positions
     const card1 = document.querySelector(`#card_${pos.x + 1}_${y}`);
     if (
       card1 &&
+      (this.getCardByCoordinates(pos.x + 1, y - diffY) || y - diffY === 4) &&
       (card1.children.length === 0 ||
         card1.children[0].classList.contains("myCard"))
     ) {
@@ -554,6 +566,7 @@ export class Game {
     const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
     if (
       card2 &&
+      (this.getCardByCoordinates(pos.x - 1, y - diffY) || y - diffY === 4) &&
       (card2.children.length === 0 ||
         card2.children[0].classList.contains("myCard"))
     ) {
@@ -562,54 +575,56 @@ export class Game {
     const card3 = document.querySelector(`#card_${pos.x}_${y + 1}`);
     if (
       card3 &&
-      (card3.children.length === 0 ||
-        card3.children[0].classList.contains("myCard")) &&
-      y + 1 != 4
+      card3.children[0] &&
+      card3.children[0].classList.contains("myCard")
     ) {
       card3.classList.add("canGo");
     }
     const card4 = document.querySelector(`#card_${pos.x}_${y - 1}`);
     if (
       card4 &&
-      (card4.children.length === 0 ||
-        card4.children[0].classList.contains("myCard")) &&
-      y - 1 != 4
+      card4.children[0] &&
+      card4.children[0].classList.contains("myCard")
     ) {
       card4.classList.add("canGo");
     }
     const card5 = document.querySelector(`#card_${pos.x + 1}_${y + 1}`);
     if (
       card5 &&
+      (this.getCardByCoordinates(pos.x + 1, y + 1 - diffY) ||
+        y + 1 - diffY === 4) &&
       (card5.children.length === 0 ||
-        card5.children[0].classList.contains("myCard")) &&
-      y + 1 != 4
+        card5.children[0].classList.contains("myCard"))
     ) {
       card5.classList.add("canGo");
     }
     const card6 = document.querySelector(`#card_${pos.x - 1}_${y + 1}`);
     if (
       card6 &&
+      (this.getCardByCoordinates(pos.x - 1, y + 1 - diffY) ||
+        y + 1 - diffY === 4) &&
       (card6.children.length === 0 ||
-        card6.children[0].classList.contains("myCard")) &&
-      y + 1 != 4
+        card6.children[0].classList.contains("myCard"))
     ) {
       card6.classList.add("canGo");
     }
     const card7 = document.querySelector(`#card_${pos.x + 1}_${y - 1}`);
     if (
       card7 &&
+      (this.getCardByCoordinates(pos.x + 1, y - 1 - diffY) ||
+        y - 1 - diffY === 4) &&
       (card7.children.length === 0 ||
-        card7.children[0].classList.contains("myCard")) &&
-      y - 1 != 4
+        card7.children[0].classList.contains("myCard"))
     ) {
       card7.classList.add("canGo");
     }
     const card8 = document.querySelector(`#card_${pos.x - 1}_${y - 1}`);
     if (
       card8 &&
+      (this.getCardByCoordinates(pos.x - 1, y - 1 - diffY) ||
+        y - 1 - diffY === 4) &&
       (card8.children.length === 0 ||
-        card8.children[0].classList.contains("myCard")) &&
-      y - 1 != 4
+        card8.children[0].classList.contains("myCard"))
     ) {
       card8.classList.add("canGo");
     }
@@ -880,9 +895,34 @@ export class Game {
       console.error("Card element not found:", `card_${old_x}_${realOldY}`);
       return;
     }
-
+    console.log("Card to move element:", cardElement);
     // Animate the card moving from hand to board
-    await this.animationManager.slideAndAttach(cardElement, targetCell);
+    if (!cardToSwap)
+      await this.animationManager.slideAndAttach(cardElement, targetCell);
+    else {
+      const cardToSwapX = cardToSwap.location_arg[0];
+      let cardToSwapY = cardToSwap.location_arg[1];
+      const cardToMoveX = cardMovement.location_arg[0];
+      let cardToMoveY = cardMovement.location_arg[1];
+      if (!this.firstPlayer) {
+        cardToSwapY = 8 - parseInt(cardToSwapY); // Mirror Y coordinate for second player
+        cardToMoveY = 8 - parseInt(cardToMoveY); // Mirror Y coordinate for second player
+      }
+      const cardToSwapElement = document.getElementById(
+        `card_${cardToSwapX}_${cardToSwapY}`,
+      ).children[0];
+      const cardToMoveElement = document.getElementById(
+        `card_${cardToMoveX}_${cardToMoveY}`,
+      ).children[0];
+      console.log(cardToSwap);
+      console.log(cardToMove);
+      console.log(`card_${cardToMoveX}_${cardToMoveY}`);
+      console.log(cardToSwapElement.parentElement, cardElement.parentElement);
+      const targetSwap = cardToSwapElement.parentElement;
+      const targetMove = cardElement.parentElement;
+      await this.animationManager.slideAndAttach(cardElement, targetSwap);
+      await this.animationManager.slideAndAttach(cardToSwapElement, targetMove);
+    }
 
     // Throw the card movement to the bin
     let bin = document.getElementById("bin");
