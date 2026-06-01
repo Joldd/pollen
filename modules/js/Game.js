@@ -307,6 +307,50 @@ export class Game {
       }
     }
 
+    myObjective.addEventListener("click", () => {
+
+      const cardObjective = myObjective.children[0];
+      const computedStyle = window.getComputedStyle(cardObjective);
+      const bgImage = computedStyle.backgroundImage;
+      console.log(bgImage);
+      // Nettoyez l'URL (supprimez les "url(" et ")" et les guillemets)
+      const imageUrl = bgImage.replace(/url\(['"]?/, "").replace(/['"]?\)/, "");
+      console.log("Objective card image URL:", imageUrl);
+      // Créez le modal
+      const modal = document.createElement("div");
+      modal.className = "modal";
+
+      const title = document.createElement("h2");
+      title.textContent = "Objective Card";
+      modal.appendChild(title);
+
+      // Créez l'image agrandie
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.style.maxWidth = "90%";
+      img.style.maxHeight = "90%";
+
+      // Ajoutez l'image au modal
+      modal.appendChild(img);
+
+      // Ajoutez le modal à la page
+      document.body.appendChild(modal);
+
+      modal.addEventListener("click", () => {
+        modal.remove();
+      });
+
+      document.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.key === "Escape") {
+            modal.remove();
+          }
+        },
+        { once: true },
+      ); // Supprime l'écouteur après utilisation
+    });
+
     document.querySelectorAll(".position").forEach((card) => {
       card.addEventListener("click", (e) => this.onPositionSelected(e));
     });

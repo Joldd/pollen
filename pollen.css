@@ -21,16 +21,18 @@
   height: 1000px;
 
   .position.selected {
-      background-color: rgb(0, 102, 255) !important;
+    background-color: rgb(0, 102, 255) !important;
   }
 
   .movable {
     border: 3px solid gold;
   }
+
   .movable:hover {
     border-color: blue;
     cursor: pointer;
   }
+
   .movable.selected {
     border-color: blue;
   }
@@ -38,10 +40,12 @@
   .canGo {
     border: 3px solid gold;
   }
+
   .canGo:hover {
     border-color: blue;
     cursor: pointer;
   }
+
   .canGo.selected {
     border-color: blue;
   }
@@ -49,7 +53,7 @@
 
 #bin {
   position: absolute;
-  top : 50%;
+  top: 50%;
   transform: translateY(-50%);
   right: 50px;
   background-color: salmon;
@@ -64,9 +68,11 @@
 .position {
   background-color: blueviolet;
 }
+
 .playable {
   border: 3px solid gold;
 }
+
 .playable:hover {
   background-color: purple;
   cursor: pointer;
@@ -75,96 +81,127 @@
 .flower1 {
   background-image: url("img/flower1.png");
 }
+
 .flower2 {
   background-image: url("img/flower2.png");
 }
+
 .flower3 {
   background-image: url("img/flower3.png");
 }
+
 .flower4 {
   background-image: url("img/flower4.png");
 }
+
 .flower5 {
   background-image: url("img/flower5.png");
 }
+
 .bee {
   background-image: url("img/bee.png");
 }
+
 .bee0 {
   background-image: url("img/bee0.png");
 }
+
 .bee1 {
   background-image: url("img/bee1.png");
 }
+
 .bee2 {
   background-image: url("img/bee2.png");
 }
+
 .bee3 {
   background-image: url("img/bee3.png");
 }
+
 .bee4 {
   background-image: url("img/bee4.png");
 }
+
 .bee5 {
   background-image: url("img/bee5.png");
 }
+
 .beeMove {
   background-image: url("img/beeMove.png");
 }
+
 .bumblebee {
   background-image: url("img/bumblebee.png");
 }
+
 .bumblebee0 {
   background-image: url("img/bumblebee0.png");
 }
+
 .bumblebee1 {
   background-image: url("img/bumblebee1.png");
 }
+
 .bumblebee2 {
   background-image: url("img/bumblebee2.png");
 }
+
 .bumblebee3 {
   background-image: url("img/bumblebee3.png");
 }
+
 .bumblebee4 {
   background-image: url("img/bumblebee4.png");
 }
+
 .bumblebee5 {
   background-image: url("img/bumblebee5.png");
 }
+
 .bumblebeeMove {
   background-image: url("img/bumblebeeMove.png");
 }
+
 .objective1 {
   background-image: url("img/objective1.png");
 }
+
 .objective2 {
   background-image: url("img/objective2.png");
 }
+
 .objective3 {
   background-image: url("img/objective3.png");
 }
+
 .objective4 {
   background-image: url("img/objective4.png");
 }
+
 .objective5 {
   background-image: url("img/objective5.png");
 }
+
 .objective6 {
   background-image: url("img/objective6.png");
 }
+
 .objective7 {
   background-image: url("img/objective7.png");
 }
+
 .objective8 {
   background-image: url("img/objective8.png");
 }
+
 .objective9 {
   background-image: url("img/objective9.png");
 }
+
 .objective0 {
   background-image: url("img/objective0.png");
 }
+
 .objectiveBack {
   background-image: url("img/objectiveBack.png");
 }
@@ -173,6 +210,7 @@
   display: flex;
   gap: 10px;
 }
+
 .card {
   width: 80px;
   height: 120px;
@@ -180,6 +218,7 @@
   background-size: cover;
   background-position: center;
 }
+
 .place {
   background-color: blueviolet;
 }
@@ -218,6 +257,7 @@
 #myHand {
   background-color: green;
 }
+
 #opponentHand {
   background-color: blue;
 }
@@ -234,8 +274,50 @@
   animation: flipToBack 0.6s ease forwards;
 }
 
+#myObjective {
+  cursor: help;
+}
+
+.modal {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
+  /* Limite la hauteur à 90% de l'écran */
+  background-color: rgba(155, 148, 148, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+  padding: 20px;
+  /* Espace autour de l'image */
+  box-sizing: border-box;
+}
+
+.modal img {
+  max-width: 100%;
+  max-height: 80vh;
+  /* Limite la hauteur à 80% de la hauteur de la fenêtre */
+  display: block;
+}
+
 @keyframes flipToBack {
-  0%   { transform: rotateY(0deg); }
-  50%  { transform: rotateY(90deg); }  /* invisible card */
-  100% { transform: rotateY(0deg); }   /* back to face, but with the new class */
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  50% {
+    transform: rotateY(90deg);
+  }
+
+  /* invisible card */
+  100% {
+    transform: rotateY(0deg);
+  }
+
+  /* back to face, but with the new class */
 }
