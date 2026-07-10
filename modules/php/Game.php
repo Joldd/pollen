@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Bga\Games\pollen;
 
 use Bga\Games\pollen\States\PlayerTurn;
+use Bga\Games\pollen\Managers\BoardGeometry;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
 class Game extends \Bga\GameFramework\Table
@@ -28,6 +29,8 @@ class Game extends \Bga\GameFramework\Table
     public $cards;
 
     public PlayerCounter $playerEnergy;
+
+    public BoardGeometry $board;
 
     /**
      * Your global variables labels:
@@ -45,10 +48,11 @@ class Game extends \Bga\GameFramework\Table
 
         $this->playerEnergy = $this->bga->counterFactory->createPlayerCounter('energy');
 
-
         // Initialize the deck
         $this->cards  = self::getNew("module.common.deck");
         $this->cards->init("card");
+
+        $this->board = new BoardGeometry($this);
     }
 
     /**
@@ -159,7 +163,7 @@ class Game extends \Bga\GameFramework\Table
             }
         }
 
-        $result['playable_positions'] = $this->getPlayablePositions($current_player_id, $result['player_number']);
+        $result['playable_positions'] = $this->board->getPlayablePositions($current_player_id, $result['player_number']);
 
         $result['remaining_ap'] = $this->getActionPoints($current_player_id);
 
@@ -276,17 +280,6 @@ class Game extends \Bga\GameFramework\Table
         return PlayerTurn::class;
     }
 
-    // State arguments for playerTurn
-    function argPlayerTurn()
-    {
-        $player_id = $this->getActivePlayerId();
-
-        return array(
-            'action_points' => $this->getActionPoints($player_id),
-            'playable_cards' => $this->getPlayableCards($player_id)
-        );
-    }
-
     // Get current action points for a player
     function getActionPoints($player_id)
     {
@@ -318,208 +311,40 @@ class Game extends \Bga\GameFramework\Table
         return $new_ap;
     }
 
-    // Get playable cards for current player
-    function getPlayableCards($player_id)
+    /**
+     * True if $y is on $player_number's own half of the board (bottom half
+     * for player 1, top half for player 2). Playing/moving on your own side
+     * costs 1 AP; the opponent's side costs 2.
+     */
+    public function isOwnSide(int $player_number, int $y): bool
     {
-        return $this->cards->getCardsInLocation('hand', $player_id);
-    }
-
-    public function getCardAtPosition(int $x, int $y): ?array
-    {
-        $cardsOnBoard = $this->cards->getCardsInLocation('board');
-        foreach ($cardsOnBoard as $card) {
-            if (str_starts_with($card['location_arg'], "{$x}{$y}")) {
-                return $card;
-            }
-        }
-        return null;
-    }
-
-    public function getPlayablePositions($player_id, $player_number): array
-    {
-        $playablePositions = [];
-
-        $remaining_ap = $this->getActionPoints($player_id);
-
-        // Get all cards currently on the board
-        $cardsOnBoard = $this->cards->getCardsInLocation('board');
-
-        // Build a set of occupied positions for quick lookup
-        $occupiedPositions = [];
-        foreach ($cardsOnBoard as $card) {
-            $occupiedPositions[$card['location_arg']] = true; // location_arg stores "x_y"
-        }
-
-        // Helper to check if a position is occupied
-        $isOccupied = function (int $x, int $y) use ($occupiedPositions): bool {
-            // location_arg is stored as integer: x.y.v concatenated (e.g. 250 = x=2, y=5, v=0)
-            return isset($occupiedPositions["{$x}{$y}0"]) || isset($occupiedPositions["{$x}{$y}1"]);
-        };
-
-        if ($player_number === 1) {
-            $mySideY    = [5, 7, +1];
-            $theirSideY = [3, 1, -1];
-            $mySideStart    = 5;
-            $theirSideStart = 3;
-        } else {
-            $mySideY    = [3, 1, -1]; // for($y=3; $y>=1; $y--)
-            $theirSideY = [5, 7, +1]; // for($y=5; $y<=7; $y++)
-            $mySideStart    = 3;
-            $theirSideStart = 5;
-        }
-
-        for ($x = 1; $x <= 5; $x++) {
-
-            // --- Mon côté (toujours jouable si >= 1 AP) ---
-            [$yStart, $yEnd, $yStep] = $mySideY;
-            for ($y = $yStart; $yStep > 0 ? $y <= $yEnd : $y >= $yEnd; $y += $yStep) {
-                if ($isOccupied($x, $y)) continue;
-
-                $hasGap = false;
-                $checkStep = $yStep > 0 ? 1 : -1;
-                for ($checkY = $mySideStart; $checkY !== $y; $checkY += $checkStep) {
-                    if (!$isOccupied($x, $checkY)) {
-                        $hasGap = true;
-                        break;
-                    }
-                }
-
-                if (!$hasGap) {
-                    $playablePositions[] = ['x' => $x, 'y' => $y];
-                }
-                break;
-            }
-
-            // --- Côté adversaire (coûte 2 AP) ---
-            if ($remaining_ap < 2) continue;
-
-            [$yStart, $yEnd, $yStep] = $theirSideY;
-            for ($y = $yStart; $yStep > 0 ? $y <= $yEnd : $y >= $yEnd; $y += $yStep) {
-                if ($isOccupied($x, $y)) continue;
-
-                $hasGap = false;
-                $checkStep = $yStep > 0 ? 1 : -1;
-                for ($checkY = $theirSideStart; $checkY !== $y; $checkY += $checkStep) {
-                    if (!$isOccupied($x, $checkY)) {
-                        $hasGap = true;
-                        break;
-                    }
-                }
-
-                if (!$hasGap) {
-                    $playablePositions[] = ['x' => $x, 'y' => $y];
-                }
-                break;
-            }
-        }
-
-        return $playablePositions;
+        return ($y > 4 && $player_number === 1) || ($y < 4 && $player_number === 2);
     }
 
     /**
-     * Retourne toutes les positions où une carte peut se déplacer
+     * Decides who plays next after an action that spent `$remaining_ap`
+     * points: the same player continues if they still have AP, otherwise
+     * the turn passes and the new active player's AP resets to 2.
      *
-     * @param string $location_arg  Position actuelle encodée "XYF" (ex: "351" = x=3, y=5, face=1)
-     * @param int    $player_number 1 ou 2
-     * @return array  Liste de ['x' => int, 'y' => int]
+     * @return array{0: int, 1: int, 2: int, 3: bool} [nextPlayerId, nextPlayerNumber, remainingAp, isNext]
      */
-    public function getMovablePositions(string $location_arg, int $player_number, bool $isSwap): array
+    public function resolveTurnAdvance(int $player_id, int $player_number, int $remaining_ap): array
     {
-        $cur_x = (int)$location_arg[0];
-        $cur_y = (int)$location_arg[1];
-
-        $movable = [];
-
-        $directions = [
-            [-1, -1],
-            [0, -1],
-            [1, -1],
-            [-1,  0],
-            [1,  0],
-            [-1,  1],
-            [0,  1],
-            [1,  1],
-        ];
-
-        foreach ($directions as [$dx, $dy]) {
-            $nx = $cur_x + $dx;
-            $ny = $cur_y + $dy;
-
-            // Hors plateau
-            if ($nx < 1 || $nx > 5 || $ny < 1 || $ny > 7) {
-                continue;
-            }
-
-            // Atterrissage sur les fleurs interdit
-            if ($ny === 4) {
-                continue;
-            }
-
-            // Pas de trous (en tenant compte que la case source sera libérée)
-            if (!$this->isValidDestination($nx, $ny, $cur_x, $cur_y, $isSwap)) {
-                continue;
-            }
-
-            $movable[] = ['x' => $nx, 'y' => $ny];
+        if ($remaining_ap > 0) {
+            return [$player_id, $player_number, $remaining_ap, false];
         }
 
-        return $movable;
+        $next_player_id = $this->getPlayerAfter($player_id);
+        $next_player_number = $player_number === 1 ? 2 : 1;
+        $this->setActionPoints($next_player_id, 2);
+
+        return [$next_player_id, $next_player_number, 2, true];
     }
 
-    /**
-     * Vérifie qu'une destination respecte la règle "pas de trous".
-     * La case source (src_x, src_y) est considérée comme libérée.
-     * Les cartes adverses comptent comme support.
-     */
-    private function isValidDestination(int $nx, int $ny, int $src_x, int $src_y, bool $isSwap): bool
+    // Moves the state machine on: same player again, or the next one's turn.
+    public function advanceState(bool $is_next): void
     {
-        // Vérifier que libérer la source ne crée pas un trou
-        // Seulement si ce n'est pas un swap (la carte swappée remplace la source)
-        if (!$isSwap) {
-            if ($src_y > 4) {
-                $cardAboveSrc = $this->getCardAtPosition($src_x, $src_y + 1);
-                if ($cardAboveSrc !== null) {
-                    $destinationFillsGap = ($nx === $src_x && $ny === $src_y + 1);
-                    if (!$destinationFillsGap) {
-                        return false;
-                    }
-                }
-            }
-
-            if ($src_y < 4) {
-                $cardBelowSrc = $this->getCardAtPosition($src_x, $src_y - 1);
-                if ($cardBelowSrc !== null) {
-                    $destinationFillsGap = ($nx === $src_x && $ny === $src_y - 1);
-                    if (!$destinationFillsGap) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        // Côté joueur 1 : y > 4, les cartes poussent de y=5 vers y=7
-        if ($ny > 4) {
-            if ($ny === 5) {
-                return true;
-            }
-            // La case en-dessous est la source : en cas de swap elle sera occupée
-            if ($nx === $src_x && ($ny - 1) === $src_y) {
-                return $isSwap; // false si déplacement simple, true si swap
-            }
-            return $this->getCardAtPosition($nx, $ny - 1) !== null;
-        }
-
-        // Côté joueur 2 : y < 4, les cartes poussent de y=3 vers y=1
-        if ($ny < 4) {
-            if ($ny === 3) {
-                return true;
-            }
-            // La case au-dessus est la source : en cas de swap elle sera occupée
-            if ($nx === $src_x && ($ny + 1) === $src_y) {
-                return $isSwap;
-            }
-            return $this->getCardAtPosition($nx, $ny + 1) !== null;
-        }
+        $this->gamestate->nextState($is_next ? 'nextPlayer' : 'stayActive');
     }
 
     /**

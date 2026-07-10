@@ -48,6 +48,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
+        $player_number = $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $card = $this->game->cards->getCard($card_id);
@@ -69,17 +70,9 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Throw card to bin
         $this->game->cards->moveCard($card_id, 'bin', time());
 
-        $number = $card['type_arg'] % 100;
-        if ($card['type'] == 'movement') $number = 'movement';
+        $number = $card['type'] == 'movement' ? 'movement' : $card['type_arg'] % 100;
 
-        $is_next = false;
-        // Who is the next player going to be after this action
-        if ($remaining_ap <= 0) {
-            $next_player_id = $this->game->getPlayerAfter($player_id);
-            $this->game->setActionPoints($next_player_id, 2); // Reset AP for next player
-            $remaining_ap = 2; // Reset AP for next player
-            $is_next = true;
-        }
+        [, , $remaining_ap, $is_next] = $this->game->resolveTurnAdvance($player_id, $player_number, $remaining_ap);
 
         $this->bga->notify->all(
             'cardThrown',
@@ -93,14 +86,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             ]
         );
 
-        // Check if player has AP remaining
-        if (!$is_next) {
-            // Stay in same state
-            $this->game->gamestate->nextState('stayActive');
-        } else {
-            // Go to next player
-            $this->game->gamestate->nextState('nextPlayer');
-        }
+        $this->game->advanceState($is_next);
     }
 
     #[PossibleAction]
@@ -108,6 +94,9 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
+        // Never trust the client-supplied player_number for ownership/cost
+        // checks: recompute it server-side.
+        $player_number = $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $card = $this->game->cards->getCard($card_id);
@@ -132,18 +121,14 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("This cell is already occupied"));
         }
 
-        $playablePositions = $this->game->getPlayablePositions($player_id, $player_number);
+        $playablePositions = $this->game->board->getPlayablePositions($player_id, $player_number);
         // Check if it is playable position
         if (!in_array(['x' => $x, 'y' => $y], $playablePositions)) {
             throw new BgaUserException($this->game->_("You cannot play on this position"));
         }
 
-        // Determine action type based on position
-        $players = $this->game->loadPlayersBasicInfos();
-        $player_no = array_search($player_id, array_keys($players)) + 1;
-
         // Check if playing on own side or opponent's side
-        $is_own_side = $y > 4 && $player_no == 1 || $y < 4 && $player_no == 2;
+        $is_own_side = $this->game->isOwnSide($player_number, $y);
 
         // Determine action cost
         $action_cost = $is_own_side ? 1 : 2;
@@ -165,22 +150,10 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
 
-        $is_next = false;
-        // Who is the next player going to be after this action
-        if ($remaining_ap > 0) {
-            // Same player continues if they have AP remaining
-            $next_player_id = $player_id;
-            $next_player_number = $player_number;
-        } else {
-            // Next player if current player has no AP remaining
-            $next_player_id = $this->game->getPlayerAfter($player_id);
-            $next_player_number = $player_number === 1 ? 2 : 1;
-            $this->game->setActionPoints($next_player_id, 2); // Reset AP for next player
-            $remaining_ap = 2; // Reset AP for next player
-            $is_next = true;
-        }
+        [$next_player_id, $next_player_number, $remaining_ap, $is_next] =
+            $this->game->resolveTurnAdvance($player_id, $player_number, $remaining_ap);
 
-        $playablePositions = $this->game->getPlayablePositions($next_player_id, $next_player_number);
+        $playablePositions = $this->game->board->getPlayablePositions($next_player_id, $next_player_number);
 
         $this->bga->notify->all(
             'cardPlayed',
@@ -203,14 +176,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             ]
         );
 
-        // Check if player has AP remaining
-        if (!$is_next) {
-            // Stay in same state
-            $this->game->gamestate->nextState('stayActive');
-        } else {
-            // Go to next player
-            $this->game->gamestate->nextState('nextPlayer');
-        }
+        $this->game->advanceState($is_next);
     }
 
     #[PossibleAction]
@@ -218,6 +184,9 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
+        // Never trust the client-supplied player_number for ownership/cost
+        // checks: recompute it server-side.
+        $player_number = $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $cardToMove = $this->game->cards->getCard($card_toMove_id);
@@ -263,7 +232,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         $isSwap = $card_toSwap_id !== null;
 
-        $movablePositions = $this->game->getMovablePositions($cardToMove['location_arg'], $player_number, $isSwap);
+        $movablePositions = $this->game->board->getMovablePositions($cardToMove['location_arg'], $player_number, $isSwap);
 
         // Check if it is playable position
         $isPlayable = false;
@@ -278,12 +247,8 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             throw new BgaUserException($this->game->_("You cannot move on this position"));
         }
 
-        // Determine action type based on position
-        $players = $this->game->loadPlayersBasicInfos();
-        $player_no = array_search($player_id, array_keys($players)) + 1;
-
         // Check if playing on own side or opponent's side
-        $is_own_side = $y > 4 && $player_no == 1 || $y < 4 && $player_no == 2;
+        $is_own_side = $this->game->isOwnSide($player_number, $y);
 
         // Determine action cost
         $action_cost = $is_own_side ? 1 : 2;
@@ -312,22 +277,10 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
 
-        $is_next = false;
-        // Who is the next player going to be after this action
-        if ($remaining_ap > 0) {
-            // Same player continues if they have AP remaining
-            $next_player_id = $player_id;
-            $next_player_number = $player_number;
-        } else {
-            // Next player if current player has no AP remaining
-            $next_player_id = $this->game->getPlayerAfter($player_id);
-            $next_player_number = $player_number === 1 ? 2 : 1;
-            $this->game->setActionPoints($next_player_id, 2); // Reset AP for next player
-            $remaining_ap = 2; // Reset AP for next player
-            $is_next = true;
-        }
+        [$next_player_id, $next_player_number, $remaining_ap, $is_next] =
+            $this->game->resolveTurnAdvance($player_id, $player_number, $remaining_ap);
 
-        $playablePositions = $this->game->getPlayablePositions($next_player_id, $next_player_number);
+        $playablePositions = $this->game->board->getPlayablePositions($next_player_id, $next_player_number);
 
         $this->bga->notify->all(
             'cardMoved',
@@ -353,14 +306,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             ]
         );
 
-        // Check if player has AP remaining
-        if (!$is_next) {
-            // Stay in same state
-            $this->game->gamestate->nextState('stayActive');
-        } else {
-            // Go to next player
-            $this->game->gamestate->nextState('nextPlayer');
-        }
+        $this->game->advanceState($is_next);
     }
 
     function zombie(int $playerId) {}
