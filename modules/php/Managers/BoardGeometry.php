@@ -64,7 +64,7 @@ class BoardGeometry
 
         for ($x = 1; $x <= 5; $x++) {
 
-            // --- Mon côté (toujours jouable si >= 1 AP) ---
+            // --- My side (always playable with >= 1 AP) ---
             [$yStart, $yEnd, $yStep] = $mySideY;
             for ($y = $yStart; $yStep > 0 ? $y <= $yEnd : $y >= $yEnd; $y += $yStep) {
                 if ($isOccupied($x, $y)) continue;
@@ -84,7 +84,7 @@ class BoardGeometry
                 break;
             }
 
-            // --- Côté adversaire (coûte 2 AP) ---
+            // --- Opponent's side (costs 2 AP) ---
             if ($remaining_ap < 2) continue;
 
             [$yStart, $yEnd, $yStep] = $theirSideY;
@@ -111,11 +111,11 @@ class BoardGeometry
     }
 
     /**
-     * Retourne toutes les positions où une carte peut se déplacer
+     * Returns all positions a card can move to
      *
-     * @param string $location_arg  Position actuelle encodée "XYF" (ex: "351" = x=3, y=5, face=1)
-     * @param int    $player_number 1 ou 2
-     * @return array  Liste de ['x' => int, 'y' => int]
+     * @param string $location_arg  Current position encoded as "XYF" (e.g. "351" = x=3, y=5, face=1)
+     * @param int    $player_number 1 or 2
+     * @return array  List of ['x' => int, 'y' => int]
      */
     public function getMovablePositions(string $location_arg, int $player_number, bool $isSwap): array
     {
@@ -139,17 +139,17 @@ class BoardGeometry
             $nx = $cur_x + $dx;
             $ny = $cur_y + $dy;
 
-            // Hors plateau
+            // Off the board
             if ($nx < 1 || $nx > 5 || $ny < 1 || $ny > 7) {
                 continue;
             }
 
-            // Atterrissage sur les fleurs interdit
+            // Landing on flowers is forbidden
             if ($ny === 4) {
                 continue;
             }
 
-            // Pas de trous (en tenant compte que la case source sera libérée)
+            // No gaps allowed (accounting for the source cell being freed)
             if (!$this->isValidDestination($nx, $ny, $cur_x, $cur_y, $isSwap)) {
                 continue;
             }
@@ -161,14 +161,14 @@ class BoardGeometry
     }
 
     /**
-     * Vérifie qu'une destination respecte la règle "pas de trous".
-     * La case source (src_x, src_y) est considérée comme libérée.
-     * Les cartes adverses comptent comme support.
+     * Checks that a destination respects the "no gaps" rule.
+     * The source cell (src_x, src_y) is considered freed.
+     * Opponent cards count as support.
      */
     private function isValidDestination(int $nx, int $ny, int $src_x, int $src_y, bool $isSwap): bool
     {
-        // Vérifier que libérer la source ne crée pas un trou
-        // Seulement si ce n'est pas un swap (la carte swappée remplace la source)
+        // Check that freeing the source doesn't create a gap
+        // Only if this isn't a swap (the swapped card replaces the source)
         if (!$isSwap) {
             if ($src_y > 4) {
                 $cardAboveSrc = $this->getCardAtPosition($src_x, $src_y + 1);
@@ -191,24 +191,24 @@ class BoardGeometry
             }
         }
 
-        // Côté joueur 1 : y > 4, les cartes poussent de y=5 vers y=7
+        // Player 1's side: y > 4, cards grow from y=5 towards y=7
         if ($ny > 4) {
             if ($ny === 5) {
                 return true;
             }
-            // La case en-dessous est la source : en cas de swap elle sera occupée
+            // The cell below is the source: on a swap it will be occupied
             if ($nx === $src_x && ($ny - 1) === $src_y) {
-                return $isSwap; // false si déplacement simple, true si swap
+                return $isSwap; // false for a plain move, true for a swap
             }
             return $this->getCardAtPosition($nx, $ny - 1) !== null;
         }
 
-        // Côté joueur 2 : y < 4, les cartes poussent de y=3 vers y=1
+        // Player 2's side: y < 4, cards grow from y=3 towards y=1
         if ($ny < 4) {
             if ($ny === 3) {
                 return true;
             }
-            // La case au-dessus est la source : en cas de swap elle sera occupée
+            // The cell above is the source: on a swap it will be occupied
             if ($nx === $src_x && ($ny + 1) === $src_y) {
                 return $isSwap;
             }
