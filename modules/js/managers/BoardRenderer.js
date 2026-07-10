@@ -211,7 +211,7 @@ export class BoardRenderer {
     cardElement.cardSelectHandler = onCardSelectHandler;
     cardElement.addEventListener("click", onCardSelectHandler);
     myDeck.appendChild(cardElement);
-    await game.animationManager.slideAndAttach(cardElement, myCards);
+    await game.slide(cardElement, myCards);
   }
 
   displayObjectiveCard(card) {
@@ -282,6 +282,6 @@ export class BoardRenderer {
     const cardElement = game.cardSelected;
     const binElement = game.elements.bin;
 
-    await game.animationManager.slideAndAttach(cardElement, binElement);
+    await game.slide(cardElement, binElement);
   }
 }

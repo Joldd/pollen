@@ -1,82 +1,198 @@
+/* ==========================================================================
+   Pollen — theme tokens
+   Palette lifted from the card illustrations (parchment bee cards, deep
+   teal flower cards, rust bumblebee cards, dusty-rose objectives).
+   ========================================================================== */
+
 #game_play_area {
+  --card-w: clamp(34px, 8vw, 84px);
+  --card-h: calc(var(--card-w) * 1.5);
+  --gap: clamp(4px, 1vw, 10px);
+  --radius: clamp(4px, 0.7vw, 9px);
+
+  --teal-deep: #14262f;
+  --teal: #1c3a44;
+  --teal-light: #2c5b68;
+  --parchment: #d8c7a1;
+  --parchment-dark: #b9a67d;
+  --rust: #a85a2a;
+  --gold: #f0bd4f;
+  --gold-soft: rgba(240, 189, 79, 0.55);
+  --cream: #f4ead9;
+  --ink: #2b1d0e;
+
+  --mine: #3c7a58;
+  --mine-dark: #1f4b38;
+  --opp: #35618c;
+  --opp-dark: #1b3550;
+
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  height: 1500px;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 20px);
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+  padding: clamp(8px, 2vw, 20px);
+  box-sizing: border-box;
 }
 
-#board {
+#game_play_area *,
+#game_play_area *::before,
+#game_play_area *::after {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Cards — shared base
+   ========================================================================== */
+
+.card {
   position: relative;
-  background-color: brown;
+  z-index: 2;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--parchment);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(244, 234, 217, 0.15);
+  /* no transition on transform here: bga-animations drives it directly
+     for slideAndAttach, and a competing CSS transition breaks the slide */
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cards {
+  display: flex;
+  gap: var(--gap);
+}
+
+/* ==========================================================================
+   Board
+   ========================================================================== */
+
+#board {
+  --board-pad: clamp(10px, 2.5vw, 24px);
+
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  border-radius: 10px;
-  padding: 20px;
-  height: 1000px;
+  gap: var(--gap);
+  width: fit-content;
+  max-width: 100%;
+  border-radius: calc(var(--radius) * 2);
+  padding: var(--board-pad);
+  /* reserve a lane the width of one card on the right for the bin, so it
+     never overlaps the grid regardless of screen size */
+  padding-right: calc(var(--board-pad) + var(--card-w) + var(--gap));
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--teal-light) 0%, var(--teal) 55%, var(--teal-deep) 100%);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(244, 234, 217, 0.12);
+}
 
-  .position.selected {
-    background-color: rgb(0, 102, 255) !important;
-  }
+.position {
+  background: linear-gradient(160deg, rgba(216, 199, 161, 0.16), rgba(216, 199, 161, 0.03));
+  border: 1px solid rgba(244, 234, 217, 0.2);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.35);
+}
 
-  .movable {
-    border: 3px solid gold;
-  }
+.position.selected {
+  border-color: #6fb3e0;
+  box-shadow:
+    0 0 0 2px #6fb3e0,
+    0 0 14px 2px rgba(111, 179, 224, 0.7);
+}
 
-  .movable:hover {
-    border-color: blue;
-    cursor: pointer;
-  }
+.movable,
+.canGo {
+  border: 2px dashed var(--gold);
+  box-shadow: 0 0 10px 1px var(--gold-soft);
+  animation: pulseGlow 1.6s ease-in-out infinite;
+}
 
-  .movable.selected {
-    border-color: blue;
-  }
+.movable:hover,
+.canGo:hover {
+  border-style: solid;
+  border-color: var(--gold);
+  cursor: pointer;
+  transform: scale(1.04);
+}
 
-  .canGo {
-    border: 3px solid gold;
-  }
+.movable.selected,
+.canGo.selected {
+  border-color: #6fb3e0;
+  border-style: solid;
+  animation: none;
+}
 
-  .canGo:hover {
-    border-color: blue;
-    cursor: pointer;
-  }
-
-  .canGo.selected {
-    border-color: blue;
-  }
+/* Center "neutral" flower row */
+#flowers {
+  border-top: 2px dashed rgba(244, 234, 217, 0.35);
+  border-bottom: 2px dashed rgba(244, 234, 217, 0.35);
+  padding-block: calc(var(--gap) / 2);
 }
 
 #bin {
   position: absolute;
+  /* vertically centered on the board = level with the flower row */
   top: 50%;
+  right: var(--board-pad);
   transform: translateY(-50%);
-  right: 50px;
-  background-color: salmon;
-
-  .card {
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(168, 90, 42, 0.35),
+    rgba(168, 90, 42, 0.35) 6px,
+    rgba(168, 90, 42, 0.15) 6px,
+    rgba(168, 90, 42, 0.15) 12px
+  );
+  border: 2px dashed rgba(244, 234, 217, 0.35);
 }
 
-.position {
-  background-color: blueviolet;
+#bin .card {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .playable {
-  border: 3px solid gold;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 12px 2px var(--gold-soft);
+  animation: pulseGlow 1.6s ease-in-out infinite;
 }
 
 .playable:hover {
-  background-color: purple;
+  background: rgba(240, 189, 79, 0.18);
   cursor: pointer;
+  transform: scale(1.04);
 }
+
+.selected {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 10px 2px var(--gold-soft);
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 1px var(--gold-soft);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px var(--gold-soft);
+  }
+}
+
+/* ==========================================================================
+   Card art
+   ========================================================================== */
 
 .flower1 {
   background-image: url("img/flower1.png");
@@ -206,68 +322,86 @@
   background-image: url("img/objectiveBack.png");
 }
 
-.cards {
-  display: flex;
-  gap: 10px;
-}
-
-.card {
-  width: 80px;
-  height: 120px;
-  border-radius: 5px;
-  background-size: cover;
-  background-position: center;
-}
-
-.place {
-  background-color: blueviolet;
-}
+/* ==========================================================================
+   Hands
+   ========================================================================== */
 
 .hand {
   position: relative;
   display: flex;
-  gap: 10px;
-  margin: 20px;
+  gap: var(--gap);
   width: 100%;
-  height: 130px;
-  border-radius: 10px;
+  max-width: 100%;
+  border-radius: calc(var(--radius) * 1.6);
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  padding: clamp(8px, 1.6vw, 16px);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(244, 234, 217, 0.12);
+}
 
-  .theCards {
-    display: flex;
-    gap: 10px;
-  }
+.hand .theCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  padding: 4px;
+}
 
-  .myCard {
-    cursor: pointer;
-  }
+.hand .theCards .card {
+  flex-shrink: 0;
+}
 
-  .myCard:hover {
-    transform: translateY(-10px);
-    transition: transform 0.2s;
-  }
+.myCard {
+  cursor: pointer;
+}
 
-  .selected {
-    border: 3px solid gold;
-  }
+/* Hover-lift only makes sense for cards still in hand, not ones on the board.
+   Transition lives on :hover only (not the base .card rule) so it never
+   fights the transform bga-animations' slideAndAttach applies. */
+.hand .myCard:hover {
+  transform: translateY(-10px);
+  transition: transform 0.15s ease;
+}
+
+.hand .myCard:active {
+  transform: translateY(-4px) scale(0.97);
 }
 
 #myHand {
-  background-color: green;
+  background: linear-gradient(135deg, var(--mine) 0%, var(--mine-dark) 100%);
+  border: 1px solid rgba(244, 234, 217, 0.18);
 }
 
 #opponentHand {
-  background-color: blue;
+  background: linear-gradient(135deg, var(--opp) 0%, var(--opp-dark) 100%);
+  border: 1px solid rgba(244, 234, 217, 0.18);
+}
+
+#myDeck,
+#opponentDeck,
+#myObjective,
+#opponentObjective {
+  position: relative;
+  flex-shrink: 0;
 }
 
 #my_deck_count,
 #opponent_deck_count {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  min-width: 1.6em;
+  padding: 0.1em 0.35em;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: clamp(11px, 2.4vw, 14px);
+  font-weight: 700;
+  font-style: normal;
   text-align: center;
-  padding-top: 10px;
-  font-size: 20px;
-  font-style: italic;
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .card-flipping {
@@ -278,31 +412,59 @@
   cursor: help;
 }
 
+#myObjective .card:hover,
+#opponentObjective .card:hover {
+  transform: scale(1.06);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(244, 234, 217, 0.25);
+}
+
+/* ==========================================================================
+   Objective modal
+   ========================================================================== */
+
 .modal {
   position: fixed;
   display: flex;
   flex-direction: column;
-  top:0;
-  left:0;
+  gap: 12px;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  /* Limite la hauteur à 90% de l'écran */
-  background-color: rgba(155, 148, 148, 0.8);
-  display: flex;
+  background-color: rgba(20, 15, 8, 0.78);
+  backdrop-filter: blur(3px);
   justify-content: center;
   align-items: center;
   z-index: 1000;
   cursor: pointer;
   padding: 20px;
-  /* Espace autour de l'image */
   box-sizing: border-box;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal h2 {
+  color: var(--cream);
+  margin: 0;
+  font-size: clamp(16px, 4vw, 22px);
 }
 
 .modal img {
-  max-width: 100%;
-  max-height: 80vh;
-  /* Limite la hauteur à 80% de la hauteur de la fenêtre */
+  max-width: min(90vw, 420px);
+  max-height: 75vh;
   display: block;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes flipToBack {
@@ -320,4 +482,19 @@
   }
 
   /* back to face, but with the new class */
+}
+
+/* ==========================================================================
+   Small screens
+   ========================================================================== */
+
+@media (max-width: 420px) {
+  #game_play_area {
+    --gap: 3px;
+    padding: 6px;
+  }
+
+  .hand {
+    padding: 6px;
+  }
 }

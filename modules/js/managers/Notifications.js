@@ -39,7 +39,7 @@ export async function cardPlayed(game, args) {
     }
 
     // Animate the card moving from hand to board
-    await game.animationManager.slideAndAttach(cardElement, targetCell);
+    await game.slide(cardElement, targetCell);
     if (is_hide) {
       // Flip the card face down after moving it to the board
       await game.boardRenderer.flipCardFaceDown(cardElement, color);
@@ -58,7 +58,7 @@ export async function cardPlayed(game, args) {
     }
 
     // Animate the card moving from hand to board
-    await game.animationManager.slideAndAttach(cardElement, targetCell);
+    await game.slide(cardElement, targetCell);
   }
 
   // Clear selection if it's the current player
@@ -105,7 +105,7 @@ export async function cardMoved(game, args) {
   }
   // Animate the card moving from hand to board
   if (!cardToSwap)
-    await game.animationManager.slideAndAttach(cardElement, targetCell);
+    await game.slide(cardElement, targetCell);
   else {
     const cardToSwapX = cardToSwap.location_arg[0];
     let cardToSwapY = cardToSwap.location_arg[1];
@@ -123,8 +123,8 @@ export async function cardMoved(game, args) {
     ).children[0];
     const targetSwap = cardToSwapElement.parentElement;
     const targetMove = cardElement.parentElement;
-    await game.animationManager.slideAndAttach(cardElement, targetSwap);
-    await game.animationManager.slideAndAttach(cardToSwapElement, targetMove);
+    await game.slide(cardElement, targetSwap);
+    await game.slide(cardToSwapElement, targetMove);
   }
 
   // Throw the card movement to the bin
@@ -153,7 +153,7 @@ export async function cardMoved(game, args) {
   }
 
   // Animate the card moving from board to bin
-  await game.animationManager.slideAndAttach(cardElementMovement, bin);
+  await game.slide(cardElementMovement, bin);
 }
 
 export async function cardsDrawn(game, args) {
@@ -177,7 +177,7 @@ export async function cardsDrawnOpponent(game, args) {
       const cardElement = document.createElement("div");
       cardElement.classList.add("card", opponentColor);
       opponentDeck.appendChild(cardElement);
-      await game.animationManager.slideAndAttach(cardElement, opponentCards);
+      await game.slide(cardElement, opponentCards);
     }
   }
 }
@@ -206,5 +206,5 @@ export async function cardThrown(game, args) {
   }
 
   // Animate the card moving from board to bin
-  await game.animationManager.slideAndAttach(cardElement, bin);
+  await game.slide(cardElement, bin);
 }
