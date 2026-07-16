@@ -138,6 +138,10 @@ export class Game {
     this.cardInteractions.hideMovablePositions();
   }
 
+  clearSelection() {
+    this.cardInteractions.clearSelection();
+  }
+
   getCardByCoordinates(x, y) {
     return this.cardInteractions.getCardByCoordinates(x, y);
   }

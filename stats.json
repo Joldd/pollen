@@ -1,1 +1,51 @@
-{}
+{
+  "table": {
+    "turns_number": {
+      "id": 10,
+      "name": "Number of turns",
+      "type": "int"
+    }
+  },
+  "player": {
+    "turns_number": {
+      "id": 10,
+      "name": "Number of turns",
+      "type": "int"
+    },
+    "cards_played": {
+      "id": 11,
+      "name": "Cards played on the board",
+      "type": "int"
+    },
+    "cards_played_hidden": {
+      "id": 12,
+      "name": "Cards played face down",
+      "type": "int"
+    },
+    "cards_thrown": {
+      "id": 13,
+      "name": "Cards thrown away",
+      "type": "int"
+    },
+    "cards_moved": {
+      "id": 14,
+      "name": "Cards moved on the board",
+      "type": "int"
+    },
+    "cards_flipped": {
+      "id": 15,
+      "name": "Opponent cards revealed",
+      "type": "int"
+    },
+    "columns_won": {
+      "id": 16,
+      "name": "Flowers won",
+      "type": "int"
+    },
+    "objective_bonus_count": {
+      "id": 17,
+      "name": "Objective bonuses scored",
+      "type": "int"
+    }
+  }
+}

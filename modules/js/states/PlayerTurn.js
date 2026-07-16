@@ -133,29 +133,16 @@ export class PlayerTurn {
     });
 
     this.game.hidePlayablePositions();
+    this.game.clearSelection();
   }
 
   onCancel() {
-    if (this.game.cardSelected) {
-      this.game.cardSelected.classList.remove("selected");
-      this.game.cardSelected = null;
-    }
-    if (this.game.positionSelected) {
-      this.game.positionSelected.classList.remove("selected");
-      this.game.positionSelected = null;
-    }
+    this.game.clearSelection();
     this.bga.statusBar.setTitle(
       this.isCurrentPlayerActive
         ? _("${you} must choose a card to play")
         : _("${actplayer} must choose a card to play"),
     );
-    this.game.cardToSwap = null;
-    this.game.cardToMove = null;
-    this.game.positionToGo = null;
-    if (this.game.cardToFlip) {
-      this.game.cardToFlip.classList.remove("selected");
-      this.game.cardToFlip = null;
-    }
     this.game.hidePlayablePositions();
     this.game.hideMyCards();
     this.game.hideMovablePositions();
@@ -188,6 +175,7 @@ export class PlayerTurn {
     });
     this.game.hideMovablePositions();
     this.game.hideMyCards();
+    this.game.clearSelection();
   }
 
   onFlip() {
@@ -209,8 +197,7 @@ export class PlayerTurn {
       card_id: card.id,
     });
 
-    this.game.cardToFlip.classList.remove("selected");
-    this.game.cardToFlip = null;
+    this.game.clearSelection();
   }
 
   onDestroy() {
@@ -223,6 +210,7 @@ export class PlayerTurn {
       card_id: cardId,
     });
     this.game.hidePlayablePositions();
+    this.game.clearSelection();
   }
 
   hideButtons() {

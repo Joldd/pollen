@@ -212,6 +212,21 @@ class Game extends \Bga\GameFramework\Table
         $this->reattributeColorsBasedOnPreferences($players, $gameinfos["player_colors"]);
         $this->reloadPlayersBasicInfos();
 
+        $this->bga->tableStats->init('turns_number', 0);
+        $this->bga->playerStats->init(
+            [
+                'turns_number',
+                'cards_played',
+                'cards_played_hidden',
+                'cards_thrown',
+                'cards_moved',
+                'cards_flipped',
+                'columns_won',
+                'objective_bonus_count',
+            ],
+            0
+        );
+
         // ===== SETUP FLOWERS =====
         // Random flower positions
         $flowerPositions = range(1, 5); // [1, 2, 3, 4, 5]
@@ -367,6 +382,9 @@ class Game extends \Bga\GameFramework\Table
         if ($remaining_ap > 0) {
             return [$player_id, $player_number, $remaining_ap, false];
         }
+
+        // Also bumps the table-level total via $updateTableStat.
+        $this->bga->playerStats->inc('turns_number', 1, (int)$player_id, true);
 
         $next_player_id = $this->getPlayerAfter($player_id);
         $next_player_number = $player_number === 1 ? 2 : 1;

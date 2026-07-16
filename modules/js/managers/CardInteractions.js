@@ -13,6 +13,27 @@ export class CardInteractions {
     });
   }
 
+  // Clears every piece of selection state (and its "selected" highlight).
+  // Must run after any action completes, successful or not: nothing else
+  // reliably does — the notification-based cleanup keys off game.player_id,
+  // which is never actually set, so it never fires.
+  clearSelection() {
+    const game = this.game;
+    [
+      "cardSelected",
+      "positionSelected",
+      "cardToMove",
+      "cardToSwap",
+      "positionToGo",
+      "cardToFlip",
+    ].forEach((key) => {
+      if (game[key]) {
+        game[key].classList.remove("selected");
+        game[key] = null;
+      }
+    });
+  }
+
   getCardByCoordinates(x, y) {
     const game = this.game;
     if (!game.firstPlayer) {

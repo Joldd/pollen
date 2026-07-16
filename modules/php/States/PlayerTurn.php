@@ -69,6 +69,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Throw card to bin
         $this->game->cards->moveCard($card_id, 'bin', time());
+        $this->bga->playerStats->inc('cards_thrown', 1, (int)$player_id);
 
         $number = $card['type'] == 'movement' ? 'movement' : $card['type_arg'] % 100;
 
@@ -146,6 +147,10 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Move card to board
         $this->game->cards->moveCard($card_id, 'board', $x * 100 + $y * 10 + ($isHide ? 1 : 0));
+        $this->bga->playerStats->inc('cards_played', 1, (int)$player_id);
+        if ($isHide) {
+            $this->bga->playerStats->inc('cards_played_hidden', 1, (int)$player_id);
+        }
 
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
@@ -273,6 +278,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
             $faceToSwap = (int)$cardToSwap['location_arg'][2];
             $this->game->cards->moveCard($card_toSwap_id, 'board', $old_x * 100 + $old_y * 10 + $faceToSwap);
         }
+        $this->bga->playerStats->inc('cards_moved', 1, (int)$player_id);
 
         // Notify all players
         $action_type = $is_own_side ? 'own_side' : 'opponent_side';
@@ -345,6 +351,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $x = (int)$card['location_arg'][0];
         $y = (int)$card['location_arg'][1];
         $this->game->cards->moveCard($card_id, 'board', $x * 100 + $y * 10);
+        $this->bga->playerStats->inc('cards_flipped', 1, (int)$player_id);
 
         [$next_player_id, $next_player_number, $remaining_ap, $is_next] =
             $this->game->resolveTurnAdvance($player_id, $player_number, $remaining_ap);

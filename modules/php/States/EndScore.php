@@ -37,6 +37,17 @@ class EndScore extends \Bga\GameFramework\States\GameState
             $this->game->setPlayerScore($playerId, $result['totals'][$playerNumber]);
         }
 
+        foreach ($result['columns'] as $column) {
+            if ($column['winner'] === null) {
+                continue;
+            }
+            $winnerId = (int)$result['player_ids'][$column['winner']];
+            $this->bga->playerStats->inc('columns_won', 1, $winnerId);
+            if ($column['bonus']) {
+                $this->bga->playerStats->inc('objective_bonus_count', 1, $winnerId);
+            }
+        }
+
         $this->bga->notify->all(
             'scoreComputed',
             clienttranslate('Final scoring'),
