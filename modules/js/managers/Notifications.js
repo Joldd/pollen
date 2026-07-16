@@ -4,6 +4,8 @@
  * name and receives the Game instance plus the notification args.
  */
 
+import { revealColumnScores } from "./ScoreSummary.js";
+
 // game.gamedatas.board is only populated once at setup(); keep it in sync as
 // cards move so later lookups (getCardByCoordinates, flippable highlighting)
 // don't act on stale positions/visibility.
@@ -264,4 +266,47 @@ export async function cardFlipped(game, args) {
   const value = card.type_arg % 100;
 
   await game.boardRenderer.flipCardFaceUp(cardElement, color, color + value);
+}
+
+export async function scoreComputed(game, args) {
+  const { board, objectives } = args;
+
+  // Reveal any card still marked face-down with its true value before
+  // showing the score breakdown.
+  const flips = [];
+  board.forEach((card) => {
+    if (card.location_arg[2] != 1) return; // already face up
+
+    const x = parseInt(card.location_arg[0]);
+    let y = parseInt(card.location_arg[1]);
+    if (!game.firstPlayer) {
+      y = 8 - y; // Mirror Y coordinate for second player
+    }
+    const cell = document.getElementById(`card_${x}_${y}`);
+    const cardElement = cell?.children[0];
+    if (!cardElement) return;
+
+    const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+    const value = card.type_arg % 100;
+    flips.push(game.boardRenderer.flipCardFaceUp(cardElement, color, color + value));
+  });
+
+  // Also reveal the opponent's objective card, still shown as its back.
+  const opponentPlayerNumber = game.myPlayerNumber === 1 ? 2 : 1;
+  const opponentObjectiveType = objectives[opponentPlayerNumber];
+  const opponentObjectiveCard =
+    game.elements.opponentObjective?.querySelector(".card");
+  if (opponentObjectiveCard && opponentObjectiveType != null) {
+    flips.push(
+      game.boardRenderer.flipCardFaceUp(
+        opponentObjectiveCard,
+        "objectiveBack",
+        `objective${opponentObjectiveType}`,
+      ),
+    );
+  }
+
+  await Promise.all(flips);
+
+  revealColumnScores(game, args);
 }

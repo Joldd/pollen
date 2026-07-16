@@ -194,4 +194,8 @@ export class Game {
   notif_cardFlipped(args) {
     return Notifications.cardFlipped(this, args);
   }
+
+  notif_scoreComputed(args) {
+    return Notifications.scoreComputed(this, args);
+  }
 }

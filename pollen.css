@@ -4,7 +4,9 @@
    teal flower cards, rust bumblebee cards, dusty-rose objectives).
    ========================================================================== */
 
-#game_play_area {
+/* Root-level (not scoped to #game_play_area) so elements appended straight
+   to <body> — modals — can use them too. */
+:root {
   --card-w: clamp(34px, 8vw, 84px);
   --card-h: calc(var(--card-w) * 1.5);
   --gap: clamp(4px, 1vw, 10px);
@@ -25,7 +27,9 @@
   --mine-dark: #1f4b38;
   --opp: #35618c;
   --opp-dark: #1b3550;
+}
 
+#game_play_area {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -169,6 +173,37 @@
   position: absolute;
   top: 0;
   left: 0;
+}
+
+/* Winner banner, level with the flower row / bin */
+#scoreSummary {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: var(--gap);
+  white-space: nowrap;
+  opacity: 0;
+  animation: scoreRowIn 0.5s ease forwards;
+  background: var(--teal-deep);
+  color: var(--gold);
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  font-size: clamp(12px, 2.5vw, 15px);
+}
+
+/* Not enough room to sit beside the board on narrow screens: stack below
+   instead. */
+@media (max-width: 700px) {
+  #scoreSummary {
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-left: 0;
+    margin-top: var(--gap);
+  }
 }
 
 .playable {
@@ -469,6 +504,116 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   End-of-game column scoring (shown directly on the board)
+   ========================================================================== */
+
+#scoreRowTop,
+#scoreRowBottom {
+  position: relative;
+  padding-block: calc(var(--gap) / 2);
+}
+
+/* "Total: N" pill, level with a species' row of badges */
+.score-row-total {
+  position: absolute;
+  left: 100%;
+  top: 25%;
+  transform: translateY(-50%);
+  margin-left: var(--gap);
+  white-space: nowrap;
+  background: var(--teal-deep);
+  color: var(--cream);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: clamp(12px, 2.5vw, 15px);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  animation: scoreRowIn 0.5s ease forwards;
+}
+
+.score-row-total.bee {
+  border: 2px solid var(--gold);
+}
+
+.score-row-total.bumblebee {
+  border: 2px solid var(--rust);
+}
+
+@media (max-width: 700px) {
+  .score-row-total {
+    position: static;
+    transform: none;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+
+  #scoreRowTop,
+  #scoreRowBottom {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+.score-badge {
+  position: relative;
+  width: var(--card-w);
+  height: calc(var(--card-h) * 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: clamp(13px, 2.8vw, 18px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  animation: scoreRowIn 0.45s ease forwards;
+}
+
+.score-badge.bee {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.score-badge.bumblebee {
+  background: var(--rust);
+  color: var(--cream);
+}
+
+.score-badge-winner {
+  box-shadow:
+    0 0 0 3px var(--cream),
+    0 0 14px 4px var(--gold-soft);
+}
+
+.score-badge-points {
+  position: absolute;
+  top: -0.5em;
+  right: -0.5em;
+  width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--teal-deep);
+  color: var(--gold);
+  font-size: 0.65em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes scoreRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

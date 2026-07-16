@@ -325,6 +325,26 @@ class Game extends \Bga\GameFramework\Table
         return $new_ap;
     }
 
+    // Flower type (1-5) for each column (x=1..5), keyed by column
+    public function getFlowers(): array
+    {
+        $flowers = self::getObjectListFromDB(
+            "SELECT position_x as x, flower_type as type FROM flower"
+        );
+        $byColumn = [];
+        foreach ($flowers as $flower) {
+            $byColumn[(int)$flower['x']] = (int)$flower['type'];
+        }
+        return $byColumn;
+    }
+
+    public function setPlayerScore($player_id, int $score): void
+    {
+        $this->DbQuery(
+            "UPDATE player SET player_score = $score WHERE player_id = $player_id"
+        );
+    }
+
     /**
      * True if $y is on $player_number's own half of the board (bottom half
      * for player 1, top half for player 2). Playing/moving on your own side
