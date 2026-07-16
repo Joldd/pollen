@@ -177,7 +177,8 @@
   animation: pulseGlow 1.6s ease-in-out infinite;
 }
 
-.playable:hover {
+.playable:hover,
+.flippable:hover {
   background: rgba(240, 189, 79, 0.18);
   cursor: pointer;
   transform: scale(1.04);

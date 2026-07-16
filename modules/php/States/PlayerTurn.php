@@ -309,5 +309,65 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $this->game->advanceState($is_next);
     }
 
+    #[PossibleAction]
+    public function actFlipCard(int $card_id): void
+    {
+        // Validate action
+        $player_id = $this->game->getActivePlayerId();
+        $player_number = (int) $this->game->getPlayerNoById($player_id);
+
+        // Get card info
+        $card = $this->game->cards->getCard($card_id);
+
+        // Must be on the board, belong to the opponent, and be face-down
+        if ($card['location'] != 'board') {
+            throw new BgaUserException($this->game->_("This card is not on the board"));
+        }
+        if ($card['type_arg'][0] == $player_number) {
+            throw new BgaUserException($this->game->_("You can only flip an opponent's card"));
+        }
+        if ((int)$card['location_arg'][2] !== 1) {
+            throw new BgaUserException($this->game->_("This card is already face up"));
+        }
+
+        // Check if player has enough action points
+        $action_cost = 2;
+        $current_ap = $this->game->getActionPoints($player_id);
+        if ($current_ap < $action_cost) {
+            throw new BgaUserException($this->game->_("Not enough action points"));
+        }
+
+        // EXECUTE ACTION
+        // Spend action points
+        $remaining_ap = $this->game->spendActionPoints($player_id, $action_cost);
+
+        // Flip the card face up, in place
+        $x = (int)$card['location_arg'][0];
+        $y = (int)$card['location_arg'][1];
+        $this->game->cards->moveCard($card_id, 'board', $x * 100 + $y * 10);
+
+        [$next_player_id, $next_player_number, $remaining_ap, $is_next] =
+            $this->game->resolveTurnAdvance($player_id, $player_number, $remaining_ap);
+
+        $playablePositions = $this->game->board->getPlayablePositions($next_player_id, $next_player_number);
+
+        $this->bga->notify->all(
+            'cardFlipped',
+            clienttranslate('${player_name} reveals an opponent card'),
+            [
+                'player_id' => $player_id,
+                'player_name' => $this->game->getActivePlayerName(),
+                'card' => $card,
+                'x' => $x,
+                'y' => $y,
+                'remaining_ap' => $remaining_ap,
+                'playable_positions' => $playablePositions,
+                'is_next' => $is_next,
+            ]
+        );
+
+        $this->game->advanceState($is_next);
+    }
+
     function zombie(int $playerId) {}
 }

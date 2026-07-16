@@ -4,12 +4,27 @@
  * name and receives the Game instance plus the notification args.
  */
 
+// game.gamedatas.board is only populated once at setup(); keep it in sync as
+// cards move so later lookups (getCardByCoordinates, flippable highlighting)
+// don't act on stale positions/visibility.
+function upsertBoardCard(game, card, locationArg) {
+  const board = game.gamedatas.board;
+  const entry = { ...card, location_arg: locationArg };
+  const index = board.findIndex((c) => c.id == card.id);
+  if (index === -1) {
+    board.push(entry);
+  } else {
+    board[index] = entry;
+  }
+}
+
 export async function cardPlayed(game, args) {
   const { card, x, y, player_id, remaining_ap, is_hide, playable_positions } =
     args;
 
   game.playable_positions = playable_positions; // Update playable positions after a card is played
   game.remaining_ap = remaining_ap; // Update remaining action points
+  upsertBoardCard(game, card, `${x}${y}${is_hide ? 1 : 0}`);
 
   // Get the target cell on the board
   let newY = y;
@@ -87,6 +102,15 @@ export async function cardMoved(game, args) {
 
   game.playable_positions = playable_positions; // Update playable positions after a card is moved
   game.remaining_ap = remaining_ap; // Update remaining action points
+
+  upsertBoardCard(game, cardToMove, `${x}${y}${cardToMove.location_arg[2]}`);
+  if (cardToSwap) {
+    upsertBoardCard(
+      game,
+      cardToSwap,
+      `${old_x}${old_y}${cardToSwap.location_arg[2]}`,
+    );
+  }
 
   // Get the target cell on the board
   let realOldY = old_y;
@@ -207,4 +231,28 @@ export async function cardThrown(game, args) {
 
   // Animate the card moving from board to bin
   await game.slide(cardElement, bin);
+}
+
+export async function cardFlipped(game, args) {
+  const { card, x, y, remaining_ap, playable_positions } = args;
+
+  game.remaining_ap = remaining_ap;
+  game.playable_positions = playable_positions;
+  upsertBoardCard(game, card, `${x}${y}0`);
+
+  let cellY = y;
+  if (!game.firstPlayer) {
+    cellY = 8 - parseInt(y); // Mirror Y coordinate for second player
+  }
+  const cell = document.getElementById(`card_${x}_${cellY}`);
+  const cardElement = cell?.children[0];
+  if (!cardElement) {
+    console.error("Card element not found for flip:", `card_${x}_${cellY}`);
+    return;
+  }
+
+  const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const value = card.type_arg % 100;
+
+  await game.boardRenderer.flipCardFaceUp(cardElement, color, color + value);
 }

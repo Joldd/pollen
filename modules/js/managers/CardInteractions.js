@@ -36,6 +36,34 @@ export class CardInteractions {
       return; // Not this player's turn
     }
 
+    // Flip: clicking directly on a face-down opponent card, no hand card
+    // needed. Only when nothing else is mid-selection.
+    if (!game.cardSelected && !game.cardToMove) {
+      const cellCoords = e.currentTarget.id.split("_");
+      const cellX = parseInt(cellCoords[1]);
+      const cellY = cellCoords[2];
+      const boardCard = this.getCardByCoordinates(cellX, cellY);
+      const isOpponentFaceDown =
+        boardCard &&
+        boardCard.type_arg[0] != game.myPlayerNumber &&
+        boardCard.location_arg[2] == 1 &&
+        game.remaining_ap >= 2;
+
+      if (isOpponentFaceDown) {
+        if (game.cardToFlip) {
+          game.cardToFlip.classList.remove("selected");
+        }
+        game.cardToFlip = e.currentTarget.children[0];
+        game.cardToFlip.classList.add("selected");
+        game.playerTurn.btnFlip.style.display = "inline-block";
+        game.playerTurn.btnCancel.style.display = "inline-block";
+        game.bga.statusBar.setTitle(
+          _("${you} are about to reveal an opponent's card"),
+        );
+        return;
+      }
+    }
+
     if (!game.cardSelected) {
       return; // No card selected
     }
@@ -324,5 +352,33 @@ export class CardInteractions {
     });
     document.querySelector(".position.selected")?.classList.remove("selected");
     this.game.positionSelected = null;
+  }
+
+  showFlippableCards() {
+    const game = this.game;
+    this.hideFlippableCards();
+    game.gamedatas.board.forEach((card) => {
+      const isOpponentFaceDown =
+        card.type_arg[0] != game.myPlayerNumber &&
+        card.location_arg[2] == 1 &&
+        game.remaining_ap >= 2;
+      if (!isOpponentFaceDown) return;
+
+      const x = parseInt(card.location_arg[0]);
+      let y = parseInt(card.location_arg[1]);
+      if (!game.firstPlayer) {
+        y = 8 - y; // Mirror Y coordinate for second player
+      }
+      const cell = document.getElementById(`card_${x}_${y}`);
+      if (cell) {
+        cell.classList.add("flippable");
+      }
+    });
+  }
+
+  hideFlippableCards() {
+    document.querySelectorAll(".flippable").forEach((cell) => {
+      cell.classList.remove("flippable");
+    });
   }
 }

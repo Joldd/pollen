@@ -14,6 +14,7 @@ export class PlayerTurn {
     this.btnCancel = null;
     this.btnDestroy = null;
     this.btnMove = null;
+    this.btnFlip = null;
   }
 
   /**
@@ -21,6 +22,9 @@ export class PlayerTurn {
    */
   onEnteringState(args, isCurrentPlayerActive) {
     this.isCurrentPlayerActive = isCurrentPlayerActive;
+    if (isCurrentPlayerActive) {
+      this.game.showFlippableCards();
+    }
     // this.bga.statusBar.setTitle(
     //   isCurrentPlayerActive
     //     ? _("${you} must choose a card to play")
@@ -62,6 +66,14 @@ export class PlayerTurn {
       id: "button_move_id",
       color: "primary",
     });
+    this.bga.statusBar.addActionButton(
+      _("Flip opponent card (-2 AP)"),
+      () => this.onFlip(),
+      {
+        id: "button_flip_id",
+        color: "primary",
+      },
+    );
     this.bga.statusBar.addActionButton(_("Cancel"), () => this.onCancel(), {
       id: "button_cancel_id",
       color: "alert",
@@ -73,12 +85,14 @@ export class PlayerTurn {
     this.btnHide = document.getElementById("button_hide_id");
     this.btnDestroy = document.getElementById("button_destroy_id");
     this.btnMove = document.getElementById("button_move_id");
+    this.btnFlip = document.getElementById("button_flip_id");
     this.btnConfirm.style.display = "none";
     this.btnCancel.style.display = "none";
     this.btnVisible.style.display = "none";
     this.btnHide.style.display = "none";
     this.btnDestroy.style.display = "none";
     this.btnMove.style.display = "none";
+    this.btnFlip.style.display = "none";
   }
 
   /**
@@ -86,6 +100,7 @@ export class PlayerTurn {
    */
   onLeavingState(args, isCurrentPlayerActive) {
     this.bga.statusBar.removeActionButtons();
+    this.game.hideFlippableCards();
   }
 
   /**
@@ -137,6 +152,10 @@ export class PlayerTurn {
     this.game.cardToSwap = null;
     this.game.cardToMove = null;
     this.game.positionToGo = null;
+    if (this.game.cardToFlip) {
+      this.game.cardToFlip.classList.remove("selected");
+      this.game.cardToFlip = null;
+    }
     this.game.hidePlayablePositions();
     this.game.hideMyCards();
     this.game.hideMovablePositions();
@@ -171,6 +190,29 @@ export class PlayerTurn {
     this.game.hideMyCards();
   }
 
+  onFlip() {
+    if (!this.game.cardToFlip) {
+      console.log("Please select an opponent's face-down card to flip.");
+      return;
+    }
+    const cell = this.game.cardToFlip.parentElement;
+    const coords = cell.id.split("_");
+    const x = parseInt(coords[1]);
+    const y = coords[2];
+    const card = this.game.getCardByCoordinates(x, y);
+    if (!card) {
+      console.log("Could not find the card to flip.");
+      return;
+    }
+
+    this.bga.actions.performAction("actFlipCard", {
+      card_id: card.id,
+    });
+
+    this.game.cardToFlip.classList.remove("selected");
+    this.game.cardToFlip = null;
+  }
+
   onDestroy() {
     if (!this.game.cardSelected) {
       console.log("Please select a card to throw.");
@@ -190,5 +232,6 @@ export class PlayerTurn {
     this.btnDestroy.style.display = "none";
     this.btnCancel.style.display = "none";
     this.btnMove.style.display = "none";
+    this.btnFlip.style.display = "none";
   }
 }

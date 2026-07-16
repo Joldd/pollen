@@ -272,6 +272,27 @@ export class BoardRenderer {
     });
   }
 
+  flipCardFaceUp(cardElement, backClass, revealedClass) {
+    return new Promise((resolve) => {
+      cardElement.classList.add("card-flipping");
+
+      // At the halfway point of the animation, reveal the true face
+      setTimeout(() => {
+        cardElement.classList.remove(backClass);
+        cardElement.classList.add(revealedClass);
+      }, 300); // 300ms = half of 600ms
+
+      cardElement.addEventListener(
+        "animationend",
+        () => {
+          cardElement.classList.remove("card-flipping");
+          resolve();
+        },
+        { once: true },
+      );
+    });
+  }
+
   async throwCardToBin() {
     const game = this.game;
     if (!game.cardSelected) {

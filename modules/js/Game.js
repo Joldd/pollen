@@ -33,6 +33,7 @@ export class Game {
     this.cardToMove = null;
     this.cardToSwap = null;
     this.positionToGo = null;
+    this.cardToFlip = null;
     this.elements = {}; // DOM node cache, populated by boardRenderer.render()
 
     this.boardRenderer = new BoardRenderer(this);
@@ -137,6 +138,18 @@ export class Game {
     this.cardInteractions.hideMovablePositions();
   }
 
+  getCardByCoordinates(x, y) {
+    return this.cardInteractions.getCardByCoordinates(x, y);
+  }
+
+  showFlippableCards() {
+    this.cardInteractions.showFlippableCards();
+  }
+
+  hideFlippableCards() {
+    this.cardInteractions.hideFlippableCards();
+  }
+
   ///////////////////////////////////////////////////
   //// Reaction to cometD notifications
 
@@ -176,5 +189,9 @@ export class Game {
 
   notif_cardThrown(args) {
     return Notifications.cardThrown(this, args);
+  }
+
+  notif_cardFlipped(args) {
+    return Notifications.cardFlipped(this, args);
   }
 }
