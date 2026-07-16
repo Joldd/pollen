@@ -227,7 +227,24 @@ export class BoardRenderer {
   }
 
   updateDeckCounter(count) {
-    document.getElementById("my_deck_count").textContent = count;
+    this.setDeckDisplay(this.game.elements.myDeck, count);
+  }
+
+  updateOpponentDeckCounter(count) {
+    this.setDeckDisplay(this.game.elements.opponentDeck, count);
+  }
+
+  // Once a deck is empty there's nothing left to show: clear the pile
+  // instead of leaving a stale card back with a "0" badge on it.
+  setDeckDisplay(deckContainer, count) {
+    if (count <= 0) {
+      deckContainer.innerHTML = "";
+      return;
+    }
+    const countBadge = deckContainer.querySelector('[id$="_deck_count"]');
+    if (countBadge) {
+      countBadge.textContent = count;
+    }
   }
 
   updateOpponentInfo(opponentData, playerColor) {

@@ -18,7 +18,7 @@ class NextPlayer extends GameState
             updateGameProgression: true,
             transitions: [
                 'nextTurn' => PlayerTurn::class,
-                'endGame' => GameEnd::class, 
+                'endGame' => EndScore::class,
             ]
         );
     }

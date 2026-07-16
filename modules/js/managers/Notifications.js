@@ -181,6 +181,7 @@ export async function cardMoved(game, args) {
 }
 
 export async function cardsDrawn(game, args) {
+  game.boardRenderer.updateDeckCounter(args.deck_count);
   if (args.cards.length > 0) {
     const color = args.cards[0].type_arg[0] == 1 ? "bee" : "bumblebee";
     args.cards.forEach(async (card) => {
@@ -190,7 +191,11 @@ export async function cardsDrawn(game, args) {
 }
 
 export async function cardsDrawnOpponent(game, args) {
-  if (args.count > 0 && !game.playerTurn.isCurrentPlayerActive) {
+  if (game.playerTurn.isCurrentPlayerActive) {
+    return;
+  }
+
+  if (args.count > 0) {
     const { opponentDeck, opponentCards } = game.elements;
     const opponentColor = opponentDeck.children[0].classList.contains(
       "bumblebee",
@@ -204,6 +209,10 @@ export async function cardsDrawnOpponent(game, args) {
       await game.slide(cardElement, opponentCards);
     }
   }
+
+  // Update (and possibly clear) the deck pile only after the fly-in
+  // animations above have used it as their source.
+  game.boardRenderer.updateOpponentDeckCounter(args.deck_count);
 }
 
 export async function cardThrown(game, args) {

@@ -44,7 +44,11 @@ class Game extends \Bga\GameFramework\Table
     public function __construct()
     {
         parent::__construct();
-        $this->initGameStateLabels([]); // mandatory, even if the array is empty
+        $this->initGameStateLabels([
+            // Set once player 1 runs out of cards: player 2 gets one final
+            // turn, then the game ends (see States/PlayerDraw.php).
+            'game_ending' => 10,
+        ]);
 
         $this->playerEnergy = $this->bga->counterFactory->createPlayerCounter('energy');
 
@@ -183,6 +187,7 @@ class Game extends \Bga\GameFramework\Table
     protected function setupNewGame($players, $options = [])
     {
         $this->playerEnergy->initDb(array_keys($players), initialValue: 2);
+        $this->setGameStateInitialValue('game_ending', 0);
 
         // Set the colors of the players with HTML color code
         $gameinfos = $this->getGameinfos();
@@ -242,26 +247,35 @@ class Game extends \Bga\GameFramework\Table
             $playerCards = array();
             $player_color = $player_index;
 
-            // 2 cards with value 0
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 0, 'nbr' => 2);
+            // // 2 cards with value 0
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 0, 'nbr' => 2);
 
-            // 3 cards with value 1
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 1, 'nbr' => 3);
+            // // 3 cards with value 1
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 1, 'nbr' => 3);
 
-            // 3 cards with value 2
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 2, 'nbr' => 3);
+            // // 3 cards with value 2
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 2, 'nbr' => 3);
+
+            // // 3 cards with value 3
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 3);
+
+            // // 3 cards with value 4
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 3);
+
+            // // 1 card with value 5
+            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 5, 'nbr' => 1);
+
+            // // 2 movement cards
+            // $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 2);
+
+            //Test
 
             // 3 cards with value 3
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 3);
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 2);
 
             // 3 cards with value 4
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 3);
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 2);
 
-            // 1 card with value 5
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 5, 'nbr' => 1);
-
-            // 20 movement cards for test (2 normaly)
-            $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 20);
 
             // Create cards in this player's personal deck
             $player_deck = 'deck_' . $player_id;
