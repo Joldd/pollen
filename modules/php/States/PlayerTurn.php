@@ -30,9 +30,14 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     public function getArgs(): array
     {
         $player_id = $this->game->getActivePlayerId();
+        $player_number = (int) $this->game->getPlayerNoById($player_id);
 
+        // Recomputed fresh on every state entry (not just via notifications)
+        // so the client can't end up with stale playable_positions/AP if a
+        // notification is ever delayed, reordered, or missed.
         return [
             "action_points" => $this->game->getActionPoints($player_id),
+            "playable_positions" => $this->game->board->getPlayablePositions($player_id, $player_number),
         ];
     }
 

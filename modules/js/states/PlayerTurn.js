@@ -22,6 +22,11 @@ export class PlayerTurn {
    */
   onEnteringState(args, isCurrentPlayerActive) {
     this.isCurrentPlayerActive = isCurrentPlayerActive;
+    // Always resync from the fresh server-computed values (not just
+    // whatever the last notification happened to carry), so a delayed or
+    // reordered notification can never leave the client with stale data.
+    this.game.remaining_ap = args.action_points;
+    this.game.playable_positions = args.playable_positions;
     if (isCurrentPlayerActive) {
       this.game.showFlippableCards();
     }
