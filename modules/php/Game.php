@@ -3,7 +3,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * pollen implementation : © <Your name here> <Your email address here>
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -154,23 +154,30 @@ class Game extends \Bga\GameFramework\Table
 
         // Add current player ID
         $result['current_player_id'] = $current_player_id;
-        // Add player number for current player
-        $players = array_keys($result['players']);
-        $result['player_number'] = array_search($current_player_id, $players) + 1;
 
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
+        // Add player number for current player. A spectator's id won't be in
+        // $players at all: default them to player 1's perspective (stable
+        // board orientation), and flag it so hand/objective/deck can be
+        // rendered as generic "not visible to me" info for BOTH sides
+        // instead of leaking one player's hand into an empty "my hand".
+        $players = array_keys($result['players']);
+        $playerIndex = array_search($current_player_id, $players);
+        $is_spectator = $playerIndex === false;
+        $result['is_spectator'] = $is_spectator;
+        $result['player_number'] = $is_spectator ? 1 : $playerIndex + 1;
+
         // Get flowers
         $result['flowers'] = self::getObjectListFromDB(
-            "SELECT position_x as x, position_y as y, flower_type as type 
+            "SELECT position_x as x, position_y as y, flower_type as type
          FROM flower"
         );
 
-        // Get current player's hand (should be 3 cards)
-        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
+        // Get current player's hand (should be 3 cards) — empty for a spectator
+        $result['hand'] = $is_spectator ? [] : $this->cards->getCardsInLocation('hand', $current_player_id);
 
         // Get current player's objective card (should be 1 card)
-        $objectiveCards = $this->cards->getCardsInLocation('objective', $current_player_id);
-        $result['objective'] = reset($objectiveCards); // Get first card or false
+        $objectiveCards = $is_spectator ? [] : $this->cards->getCardsInLocation('objective', $current_player_id);
+        $result['objective'] = $is_spectator ? null : (reset($objectiveCards) ?: null);
 
         // Get cards on the board
         $result['board'] = self::getObjectListFromDB(
@@ -179,23 +186,36 @@ class Game extends \Bga\GameFramework\Table
          WHERE card_location = 'board'"
         );
 
-        // Get remaining cards count in current player's deck (should be 14 = 17 - 3)
-        $result['deckCount'] = $this->cards->countCardsInLocation('deck_' . $current_player_id);
-
-        // Get opponent's information
-        foreach ($this->loadPlayersBasicInfos() as $player_id => $player) {
-            if ($player_id != $current_player_id) {
-                $result['opponent'] = array(
-                    'hand_count' => $this->cards->countCardsInLocation('hand', $player_id),
-                    'deck_count' => $this->cards->countCardsInLocation('deck_' . $player_id),
-                    'has_objective' => $this->cards->countCardsInLocation('objective', $player_id) > 0
-                );
-            }
+        // Per-seat hand/deck/objective counts for both players — used for the
+        // "opponent" panel always, and for "my own" panel too when spectating.
+        $handInfoByNumber = [];
+        foreach ($players as $idx => $pid) {
+            $handInfoByNumber[$idx + 1] = [
+                'hand_count' => $this->cards->countCardsInLocation('hand', $pid),
+                'deck_count' => $this->cards->countCardsInLocation('deck_' . $pid),
+                'has_objective' => $this->cards->countCardsInLocation('objective', $pid) > 0,
+            ];
         }
 
-        $result['playable_positions'] = $this->board->getPlayablePositions($current_player_id, $result['player_number']);
+        $myNumber = $result['player_number'];
+        $opponentNumber = $myNumber === 1 ? 2 : 1;
 
-        $result['remaining_ap'] = $this->getActionPoints($current_player_id);
+        // Get remaining cards count in current player's deck (should be 14 = 17 - 3)
+        $result['deckCount'] = $is_spectator
+            ? $handInfoByNumber[$myNumber]['deck_count']
+            : $this->cards->countCardsInLocation('deck_' . $current_player_id);
+
+        // Only used when spectating: my own hand has no real data either, so
+        // the client renders it the same generic way as the opponent's.
+        $result['my_hand_info'] = $is_spectator ? $handInfoByNumber[$myNumber] : null;
+
+        $result['opponent'] = $handInfoByNumber[$opponentNumber];
+
+        $result['playable_positions'] = $is_spectator
+            ? []
+            : $this->board->getPlayablePositions($current_player_id, $myNumber);
+
+        $result['remaining_ap'] = $is_spectator ? 0 : $this->getActionPoints($current_player_id);
 
         // Get last thrown card (if any)
         $lastThrownCard = $this->getObjectFromDB(

@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * pollen implementation : © <Your name here> <Your email address here>
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -114,6 +114,7 @@ export class Game {
     // Store player number
     this.myPlayerNumber = gamedatas.player_number;
     this.firstPlayer = this.myPlayerNumber === 1;
+    this.isSpectator = !!gamedatas.is_spectator;
 
     this.boardRenderer.render(gamedatas);
     this.cardInteractions.attachPositionListeners();

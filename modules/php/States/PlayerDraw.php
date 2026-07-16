@@ -61,6 +61,7 @@ class PlayerDraw extends GameState
                 clienttranslate('${player_name} draws ${count} cards'),
                 [
                     'player_id' => $player_id,
+                    'player_number' => $player_number,
                     'player_name' => $this->game->getActivePlayerName(),
                     'count' => count($drawnCards),
                     'deck_count' => $deckCount,

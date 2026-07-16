@@ -11,10 +11,10 @@
 
 $gameinfos = [
     // Name of the game in English (will serve as the basis for translation)
-    'game_name' => "My Great Game",
+    'game_name' => "Pollen",
 
     // Game publisher (use empty string if there is no publisher)
-    'publisher' => 'My Publishing Company',
+    'publisher' => '',
 
     // Url of game publisher website
     'publisher_website' => 'http://www.mypublishingcompany.com/',

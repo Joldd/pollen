@@ -88,10 +88,16 @@ export class BoardRenderer {
 
     const playerColor = game.myPlayerNumber === 1 ? "bee" : "bumblebee";
 
-    // Display player's hand
-    for (let card_id in gamedatas.hand) {
-      const card = gamedatas.hand[card_id];
-      this.addCardToHand(card, playerColor);
+    // Display player's hand — a spectator has no real hand data (neither
+    // player's cards are visible to them), so their "my hand" renders the
+    // same generic way an opponent's hand does: backs + counts.
+    if (gamedatas.is_spectator) {
+      this.renderMyHandAsSpectator(gamedatas.my_hand_info, playerColor);
+    } else {
+      for (let card_id in gamedatas.hand) {
+        const card = gamedatas.hand[card_id];
+        this.addCardToHand(card, playerColor);
+      }
     }
 
     // Display cards on the board
@@ -243,6 +249,19 @@ export class BoardRenderer {
     const countBadge = deckContainer.querySelector('[id$="_deck_count"]');
     if (countBadge) {
       countBadge.textContent = count;
+    }
+  }
+
+  // Spectator-only: "my hand" has no real cards to show, so render it like
+  // an opponent's hand (backs + count) instead of leaving it empty. The
+  // deck pile itself is already handled generically via gamedatas.deckCount.
+  renderMyHandAsSpectator(handInfo, playerColor) {
+    const { myCards, myObjective } = this.game.elements;
+    for (let i = 0; i < handInfo.hand_count; i++) {
+      myCards.insertAdjacentHTML("beforeend", `<div class="card ${playerColor}"></div>`);
+    }
+    if (handInfo.has_objective) {
+      myObjective.insertAdjacentHTML("beforeend", `<div class="card objectiveBack"></div>`);
     }
   }
 

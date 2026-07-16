@@ -20,9 +20,25 @@ function upsertBoardCard(game, card, locationArg) {
   }
 }
 
+// Finds the DOM element representing a card that's still sitting in a hand
+// (about to fly to the board/bin/etc). Real players have a real, addressable
+// element (id="card_<id>") only for their OWN cards — the opponent's hand is
+// always generic placeholders. A spectator never has real card data for
+// EITHER side, so both are placeholders there. Returns null if nothing usable
+// was found.
+function resolveHandCardElement(game, ownerPlayerNumber, cardId) {
+  const isMine = ownerPlayerNumber == game.myPlayerNumber;
+
+  if (isMine && !game.isSpectator) {
+    return { element: document.getElementById(`card_${cardId}`), isPlaceholder: false };
+  }
+
+  const container = isMine ? game.elements.myCards : game.elements.opponentCards;
+  return { element: container?.children[0], isPlaceholder: true };
+}
+
 export async function cardPlayed(game, args) {
-  const { card, x, y, player_id, remaining_ap, is_hide, playable_positions } =
-    args;
+  const { card, x, y, remaining_ap, is_hide, playable_positions } = args;
 
   game.playable_positions = playable_positions; // Update playable positions after a card is played
   game.remaining_ap = remaining_ap; // Update remaining action points
@@ -39,17 +55,25 @@ export async function cardPlayed(game, args) {
     return;
   }
 
-  const isCurrentPlayerActive = game.playerTurn.isCurrentPlayerActive;
   const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const { element: cardElement, isPlaceholder } = resolveHandCardElement(
+    game,
+    card.type_arg[0],
+    card.id,
+  );
 
-  if (isCurrentPlayerActive) {
-    // Get the card element (currently in hand)
-    const cardElement = document.getElementById(`card_${card.id}`);
-    if (!cardElement) {
-      console.error("Card element not found:", `card_${card.id}`);
-      return;
+  if (!cardElement) {
+    console.error("Card element not found for cardPlayed:", card.id);
+    return;
+  }
+
+  if (isPlaceholder) {
+    if (!is_hide) {
+      cardElement.classList.remove(color); // Remove the back class (e.g., bee)
+      cardElement.classList.add(color + (card.type_arg % 100)); // e.g., bee3, bumblebee2...
     }
-
+    await game.slide(cardElement, targetCell);
+  } else {
     if (cardElement.cardSelectHandler) {
       cardElement.removeEventListener("click", cardElement.cardSelectHandler);
       delete cardElement.cardSelectHandler;
@@ -61,27 +85,6 @@ export async function cardPlayed(game, args) {
       // Flip the card face down after moving it to the board
       await game.boardRenderer.flipCardFaceDown(cardElement, color);
     }
-  } else {
-    // Get the card element (currently in hand)
-    const cardElement = document.getElementById(`opponentCards`).children[0]; // Assuming opponent's hand cards are added as children of opponentCards
-
-    if (!cardElement) {
-      console.error("Opponent card element not found in hand");
-      return;
-    }
-    if (!is_hide) {
-      cardElement.classList.remove(color); // Remove the back class (e.g., bee)
-      cardElement.classList.add(color + (card.type_arg % 100)); // e.g., bee3, bumblebee2...
-    }
-
-    // Animate the card moving from hand to board
-    await game.slide(cardElement, targetCell);
-  }
-
-  // Clear selection if it's the current player
-  if (player_id == game.player_id) {
-    game.cardSelected = null;
-    game.positionSelected = null;
   }
 }
 
@@ -92,14 +95,12 @@ export async function cardMoved(game, args) {
     cardToSwap,
     x,
     y,
-    player_id,
     playable_positions,
     remaining_ap,
     old_x,
     old_y,
   } = args;
 
-  const isCurrentPlayerActive = game.playerTurn.isCurrentPlayerActive;
   const color = cardToMove.type_arg[0] == 1 ? "bee" : "bumblebee";
 
   game.playable_positions = playable_positions; // Update playable positions after a card is moved
@@ -155,27 +156,18 @@ export async function cardMoved(game, args) {
 
   // Throw the card movement to the bin
   let bin = document.getElementById("bin");
-  let cardElementMovement = null;
-  if (isCurrentPlayerActive) {
-    cardElementMovement = document.getElementById(`card_${cardMovement.id}`);
-  } else {
-    cardElementMovement =
-      document.getElementById(`opponentCards`).children[0];
-    cardElementMovement.classList.remove(color); // Remove the back class (e.g., bee)
-    cardElementMovement.classList.add(color + "Move"); // movement card
-  }
+  const { element: cardElementMovement, isPlaceholder } = resolveHandCardElement(
+    game,
+    cardMovement.type_arg[0],
+    cardMovement.id,
+  );
   if (!cardElementMovement) {
     console.error("Card element not found:", `card_${cardMovement.id}`);
     return;
   }
-
-  // Clear selection if it's the current player
-  if (isCurrentPlayerActive) {
-    game.cardSelected = null;
-    game.positionSelected = null;
-    game.cardToMove = null;
-    game.cardToSwap = null;
-    game.positionToGo = null;
+  if (isPlaceholder) {
+    cardElementMovement.classList.remove(color); // Remove the back class (e.g., bee)
+    cardElementMovement.classList.add(color + "Move"); // movement card
   }
 
   // Animate the card moving from board to bin
@@ -197,47 +189,57 @@ export async function cardsDrawnOpponent(game, args) {
     return;
   }
 
+  // For a real player this is always the opponent (their own draw arrives
+  // via the private "cardsDrawn" notification instead, which returns above).
+  // A spectator has no such private notification for either side, so this
+  // must pick the correct section based on who actually drew.
+  const isMine = args.player_number == game.myPlayerNumber;
+  const deckEl = isMine ? game.elements.myDeck : game.elements.opponentDeck;
+  const cardsEl = isMine ? game.elements.myCards : game.elements.opponentCards;
+
   if (args.count > 0) {
-    const { opponentDeck, opponentCards } = game.elements;
-    const opponentColor = opponentDeck.children[0].classList.contains(
-      "bumblebee",
-    )
+    const backColor = deckEl.children[0].classList.contains("bumblebee")
       ? "bumblebee"
       : "bee";
     for (let i = 0; i < args.count; i++) {
       const cardElement = document.createElement("div");
-      cardElement.classList.add("card", opponentColor);
-      opponentDeck.appendChild(cardElement);
-      await game.slide(cardElement, opponentCards);
+      cardElement.classList.add("card", backColor);
+      deckEl.appendChild(cardElement);
+      await game.slide(cardElement, cardsEl);
     }
   }
 
   // Update (and possibly clear) the deck pile only after the fly-in
   // animations above have used it as their source.
-  game.boardRenderer.updateOpponentDeckCounter(args.deck_count);
+  if (isMine) {
+    game.boardRenderer.updateDeckCounter(args.deck_count);
+  } else {
+    game.boardRenderer.updateOpponentDeckCounter(args.deck_count);
+  }
 }
 
 export async function cardThrown(game, args) {
-  const { card, player_id } = args;
-  const isCurrentPlayerActive = game.playerTurn.isCurrentPlayerActive;
+  const { card } = args;
   const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
   let bin = document.getElementById("bin");
   if (!bin) {
     console.error("Bin element not found");
     return;
   }
-  let cardElement = null;
-  if (isCurrentPlayerActive) {
-    cardElement = document.getElementById(`card_${card.id}`);
-  } else {
-    const type = card.type === "movement" ? "Move" : card.type_arg % 100;
-    cardElement = document.getElementById(`opponentCards`).children[0];
-    cardElement.classList.remove(color); // Remove the back class (e.g., bee)
-    cardElement.classList.add(color + type); // e.g., bee3, bumblebee2...
-  }
+
+  const { element: cardElement, isPlaceholder } = resolveHandCardElement(
+    game,
+    card.type_arg[0],
+    card.id,
+  );
   if (!cardElement) {
     console.error("Card element not found:", `card_${card.id}`);
     return;
+  }
+  if (isPlaceholder) {
+    const type = card.type === "movement" ? "Move" : card.type_arg % 100;
+    cardElement.classList.remove(color); // Remove the back class (e.g., bee)
+    cardElement.classList.add(color + type); // e.g., bee3, bumblebee2...
   }
 
   // Animate the card moving from board to bin
@@ -291,20 +293,28 @@ export async function scoreComputed(game, args) {
     flips.push(game.boardRenderer.flipCardFaceUp(cardElement, color, color + value));
   });
 
-  // Also reveal the opponent's objective card, still shown as its back.
+  // Reveal the opponent's objective card, still shown as its back. A
+  // spectator never saw either objective face-up, so reveal both for them.
   const opponentPlayerNumber = game.myPlayerNumber === 1 ? 2 : 1;
-  const opponentObjectiveType = objectives[opponentPlayerNumber];
-  const opponentObjectiveCard =
-    game.elements.opponentObjective?.querySelector(".card");
-  if (opponentObjectiveCard && opponentObjectiveType != null) {
-    flips.push(
-      game.boardRenderer.flipCardFaceUp(
-        opponentObjectiveCard,
-        "objectiveBack",
-        `objective${opponentObjectiveType}`,
-      ),
-    );
-  }
+  const playerNumbersToReveal = game.isSpectator
+    ? [game.myPlayerNumber, opponentPlayerNumber]
+    : [opponentPlayerNumber];
+
+  playerNumbersToReveal.forEach((playerNumber) => {
+    const isMine = playerNumber == game.myPlayerNumber;
+    const container = isMine ? game.elements.myObjective : game.elements.opponentObjective;
+    const objectiveCard = container?.querySelector(".card.objectiveBack");
+    const objectiveType = objectives[playerNumber];
+    if (objectiveCard && objectiveType != null) {
+      flips.push(
+        game.boardRenderer.flipCardFaceUp(
+          objectiveCard,
+          "objectiveBack",
+          `objective${objectiveType}`,
+        ),
+      );
+    }
+  });
 
   await Promise.all(flips);
 
