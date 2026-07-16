@@ -14,17 +14,17 @@ export class BoardRenderer {
     game.bga.gameArea.getElement().insertAdjacentHTML(
       "beforeend",
       `
-        <div id="opponentHand" class="hand">
+        <div id="opponentHand" class="pln-hand">
           <div id="opponentObjective"></div>
-          <div id="opponentCards" class="theCards"></div>
+          <div id="opponentCards" class="pln-theCards"></div>
           <div id="opponentDeck"></div>
         </div>
         <div id="board">
-          <div id="bin" class="card"></div>
+          <div id="bin" class="pln-card"></div>
         </div>
-        <div id="myHand" class="hand">
+        <div id="myHand" class="pln-hand">
           <div id="myObjective"></div>
-          <div id="myCards" class="theCards"></div>
+          <div id="myCards" class="pln-theCards"></div>
           <div id="myDeck"></div>
         </div>
         `,
@@ -49,7 +49,7 @@ export class BoardRenderer {
     });
     for (let y = 1; y <= 7; y++) {
       const row = document.createElement("div");
-      row.classList.add("cards");
+      row.classList.add("pln-cards");
       if (y === 4) row.id = "flowers";
       board.appendChild(row);
 
@@ -58,8 +58,8 @@ export class BoardRenderer {
         const key = `${x}_${y}`;
         const flowerType = flowersMap[key] || "";
         const className = isFlower
-          ? `flower${flowerType} card`
-          : "position card";
+          ? `pln-flower${flowerType} pln-card`
+          : "pln-position pln-card";
 
         row.insertAdjacentHTML(
           "afterbegin",
@@ -86,7 +86,7 @@ export class BoardRenderer {
       });
     });
 
-    const playerColor = game.myPlayerNumber === 1 ? "bee" : "bumblebee";
+    const playerColor = game.myPlayerNumber === 1 ? "pln-bee" : "pln-bumblebee";
 
     // Display player's hand — a spectator has no real hand data (neither
     // player's cards are visible to them), so their "my hand" renders the
@@ -111,12 +111,12 @@ export class BoardRenderer {
           boardY = 8 - parseInt(boardY); // Mirror Y coordinate for second player
         }
         const cell = document.getElementById(`card_${boardX}_${boardY}`);
-        const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
-        const myCard = color === playerColor ? "myCard" : "";
+        const color = card.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
+        const myCard = color === playerColor ? "pln-myCard" : "";
         const number = isVisible ? card.type_arg % 100 : "";
         const cardId = color === playerColor ? "card_" + card.id : "";
         if (cell) {
-          const cardDiv = `<div id="${cardId}" class="card ${card.type} ${color}${number} ${myCard}">
+          const cardDiv = `<div id="${cardId}" class="pln-card pln-${card.type} ${color}${number} ${myCard}">
                          </div>`;
           cell.insertAdjacentHTML("afterbegin", cardDiv);
         }
@@ -128,7 +128,7 @@ export class BoardRenderer {
       this.displayObjectiveCard(gamedatas.objective);
     }
 
-    const myDeckDiv = `<div class="card ${playerColor}"><div id="my_deck_count">${gamedatas.deckCount}</div></div>`;
+    const myDeckDiv = `<div class="pln-card ${playerColor}"><div id="my_deck_count">${gamedatas.deckCount}</div></div>`;
     myDeck.insertAdjacentHTML("beforeend", myDeckDiv);
     // Display deck count
     this.updateDeckCounter(gamedatas.deckCount);
@@ -141,12 +141,12 @@ export class BoardRenderer {
     // Display last thrown card in the bin
     if (gamedatas.last_thrown) {
       const lastThrownCard = gamedatas.last_thrown;
-      const color = lastThrownCard.card_type_arg[0] == 1 ? "bee" : "bumblebee";
+      const color = lastThrownCard.card_type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
       const type =
         lastThrownCard.card_type === "movement"
           ? "Move"
           : lastThrownCard.card_type_arg % 100;
-      const cardDiv = `<div class="card ${lastThrownCard.card_type} ${color}${type}">
+      const cardDiv = `<div class="pln-card pln-${lastThrownCard.card_type} ${color}${type}">
                          </div>`;
       bin.insertAdjacentHTML("afterbegin", cardDiv);
     }
@@ -160,7 +160,7 @@ export class BoardRenderer {
       const imageUrl = bgImage.replace(/url\(['"]?/, "").replace(/['"]?\)/, "");
 
       const modal = document.createElement("div");
-      modal.className = "modal";
+      modal.className = "pln-modal";
 
       const title = document.createElement("h2");
       title.textContent = "Objective Card";
@@ -205,10 +205,10 @@ export class BoardRenderer {
 
     const cardElement = document.createElement("div");
     cardElement.classList.add(
-      "card",
-      card.type,
+      "pln-card",
+      `pln-${card.type}`,
       playerColor + cardContent,
-      "myCard",
+      "pln-myCard",
     );
     cardElement.id = `card_${card.id}`;
 
@@ -224,7 +224,7 @@ export class BoardRenderer {
     const objectiveNumber = card.type_arg;
 
     const cardDiv = `<div id="objective_card_${card.id}"
-                          class="card objective${objectiveNumber}">
+                          class="pln-card pln-objective${objectiveNumber}">
                     </div>`;
 
     // Place in your objective card zone
@@ -258,48 +258,48 @@ export class BoardRenderer {
   renderMyHandAsSpectator(handInfo, playerColor) {
     const { myCards, myObjective } = this.game.elements;
     for (let i = 0; i < handInfo.hand_count; i++) {
-      myCards.insertAdjacentHTML("beforeend", `<div class="card ${playerColor}"></div>`);
+      myCards.insertAdjacentHTML("beforeend", `<div class="pln-card ${playerColor}"></div>`);
     }
     if (handInfo.has_objective) {
-      myObjective.insertAdjacentHTML("beforeend", `<div class="card objectiveBack"></div>`);
+      myObjective.insertAdjacentHTML("beforeend", `<div class="pln-card pln-objectiveBack"></div>`);
     }
   }
 
   updateOpponentInfo(opponentData, playerColor) {
     const { opponentCards, opponentDeck, opponentObjective } = this.game.elements;
-    const opponentColor = playerColor === "bee" ? "bumblebee" : "bee";
+    const opponentColor = playerColor === "pln-bee" ? "pln-bumblebee" : "pln-bee";
     for (let i = 0; i < opponentData.hand_count; i++) {
-      const cardDiv = `<div class="card ${opponentColor}"></div>`;
+      const cardDiv = `<div class="pln-card ${opponentColor}"></div>`;
       opponentCards.insertAdjacentHTML("beforeend", cardDiv);
     }
-    const deckDiv = `<div class="card ${opponentColor}"><div id="opponent_deck_count">${opponentData.deck_count}</div></div>`;
+    const deckDiv = `<div class="pln-card ${opponentColor}"><div id="opponent_deck_count">${opponentData.deck_count}</div></div>`;
     opponentDeck.insertAdjacentHTML("beforeend", deckDiv);
 
-    const objective = `<div class="card objectiveBack"></div>`;
+    const objective = `<div class="pln-card pln-objectiveBack"></div>`;
     opponentObjective.insertAdjacentHTML("beforeend", objective);
   }
 
   flipCardFaceDown(cardElement, deckClass) {
     return new Promise((resolve) => {
-      cardElement.classList.add("card-flipping");
+      cardElement.classList.add("pln-card-flipping");
 
       // At the halfway point of the animation, switch the card face to the back
       setTimeout(() => {
-        // Remove all specific card classes (e.g., bee3, bee2...)
-        // and add the back class (e.g., bee)
+        // Remove all specific card classes (e.g., pln-bee3, pln-bee2...)
+        // and add the back class (e.g., pln-bee)
         const cardClasses = [...cardElement.classList];
         cardClasses.forEach((cls) => {
-          if (cls !== deckClass && cls.startsWith(deckClass.slice(0, 3))) {
+          if (cls !== deckClass && cls.startsWith(deckClass)) {
             cardElement.classList.remove(cls);
           }
         });
-        cardElement.classList.add(deckClass); // add 'bee'
+        cardElement.classList.add(deckClass); // add 'pln-bee'
       }, 300); // 300ms = half of 600ms
 
       cardElement.addEventListener(
         "animationend",
         () => {
-          cardElement.classList.remove("card-flipping");
+          cardElement.classList.remove("pln-card-flipping");
           resolve();
         },
         { once: true },
@@ -309,7 +309,7 @@ export class BoardRenderer {
 
   flipCardFaceUp(cardElement, backClass, revealedClass) {
     return new Promise((resolve) => {
-      cardElement.classList.add("card-flipping");
+      cardElement.classList.add("pln-card-flipping");
 
       // At the halfway point of the animation, reveal the true face
       setTimeout(() => {
@@ -320,7 +320,7 @@ export class BoardRenderer {
       cardElement.addEventListener(
         "animationend",
         () => {
-          cardElement.classList.remove("card-flipping");
+          cardElement.classList.remove("pln-card-flipping");
           resolve();
         },
         { once: true },

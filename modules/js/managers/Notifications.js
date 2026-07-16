@@ -55,7 +55,7 @@ export async function cardPlayed(game, args) {
     return;
   }
 
-  const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const color = card.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
   const { element: cardElement, isPlaceholder } = resolveHandCardElement(
     game,
     card.type_arg[0],
@@ -69,8 +69,8 @@ export async function cardPlayed(game, args) {
 
   if (isPlaceholder) {
     if (!is_hide) {
-      cardElement.classList.remove(color); // Remove the back class (e.g., bee)
-      cardElement.classList.add(color + (card.type_arg % 100)); // e.g., bee3, bumblebee2...
+      cardElement.classList.remove(color); // Remove the back class (e.g., pln-bee)
+      cardElement.classList.add(color + (card.type_arg % 100)); // e.g., pln-bee3, pln-bumblebee2...
     }
     await game.slide(cardElement, targetCell);
   } else {
@@ -101,7 +101,7 @@ export async function cardMoved(game, args) {
     old_y,
   } = args;
 
-  const color = cardToMove.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const color = cardToMove.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
 
   game.playable_positions = playable_positions; // Update playable positions after a card is moved
   game.remaining_ap = remaining_ap; // Update remaining action points
@@ -166,8 +166,14 @@ export async function cardMoved(game, args) {
     return;
   }
   if (isPlaceholder) {
-    cardElementMovement.classList.remove(color); // Remove the back class (e.g., bee)
+    cardElementMovement.classList.remove(color); // Remove the back class (e.g., pln-bee)
     cardElementMovement.classList.add(color + "Move"); // movement card
+  } else {
+    if (cardElementMovement.cardSelectHandler) {
+      cardElementMovement.removeEventListener("click", cardElementMovement.cardSelectHandler);
+      delete cardElementMovement.cardSelectHandler;
+    }
+    cardElementMovement.classList.remove("pln-myCard", "pln-movable", "pln-selected");
   }
 
   // Animate the card moving from board to bin
@@ -177,7 +183,7 @@ export async function cardMoved(game, args) {
 export async function cardsDrawn(game, args) {
   game.boardRenderer.updateDeckCounter(args.deck_count);
   if (args.cards.length > 0) {
-    const color = args.cards[0].type_arg[0] == 1 ? "bee" : "bumblebee";
+    const color = args.cards[0].type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
     args.cards.forEach(async (card) => {
       await game.boardRenderer.addCardToHand(card, color);
     });
@@ -198,12 +204,12 @@ export async function cardsDrawnOpponent(game, args) {
   const cardsEl = isMine ? game.elements.myCards : game.elements.opponentCards;
 
   if (args.count > 0) {
-    const backColor = deckEl.children[0].classList.contains("bumblebee")
-      ? "bumblebee"
-      : "bee";
+    const backColor = deckEl.children[0].classList.contains("pln-bumblebee")
+      ? "pln-bumblebee"
+      : "pln-bee";
     for (let i = 0; i < args.count; i++) {
       const cardElement = document.createElement("div");
-      cardElement.classList.add("card", backColor);
+      cardElement.classList.add("pln-card", backColor);
       deckEl.appendChild(cardElement);
       await game.slide(cardElement, cardsEl);
     }
@@ -220,7 +226,7 @@ export async function cardsDrawnOpponent(game, args) {
 
 export async function cardThrown(game, args) {
   const { card } = args;
-  const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const color = card.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
   let bin = document.getElementById("bin");
   if (!bin) {
     console.error("Bin element not found");
@@ -238,8 +244,17 @@ export async function cardThrown(game, args) {
   }
   if (isPlaceholder) {
     const type = card.type === "movement" ? "Move" : card.type_arg % 100;
-    cardElement.classList.remove(color); // Remove the back class (e.g., bee)
-    cardElement.classList.add(color + type); // e.g., bee3, bumblebee2...
+    cardElement.classList.remove(color); // Remove the back class (e.g., pln-bee)
+    cardElement.classList.add(color + type); // e.g., pln-bee3, pln-bumblebee2...
+  } else {
+    if (cardElement.cardSelectHandler) {
+      cardElement.removeEventListener("click", cardElement.cardSelectHandler);
+      delete cardElement.cardSelectHandler;
+    }
+    // The real hand element is being reused as-is in the bin: strip the
+    // hand-only classes so it stops being picked up as a selectable/movable
+    // card of mine (e.g. by showMovableCards()'s ".pln-myCard" scan).
+    cardElement.classList.remove("pln-myCard", "pln-movable", "pln-selected");
   }
 
   // Animate the card moving from board to bin
@@ -264,7 +279,7 @@ export async function cardFlipped(game, args) {
     return;
   }
 
-  const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+  const color = card.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
   const value = card.type_arg % 100;
 
   await game.boardRenderer.flipCardFaceUp(cardElement, color, color + value);
@@ -288,7 +303,7 @@ export async function scoreComputed(game, args) {
     const cardElement = cell?.children[0];
     if (!cardElement) return;
 
-    const color = card.type_arg[0] == 1 ? "bee" : "bumblebee";
+    const color = card.type_arg[0] == 1 ? "pln-bee" : "pln-bumblebee";
     const value = card.type_arg % 100;
     flips.push(game.boardRenderer.flipCardFaceUp(cardElement, color, color + value));
   });
@@ -303,14 +318,14 @@ export async function scoreComputed(game, args) {
   playerNumbersToReveal.forEach((playerNumber) => {
     const isMine = playerNumber == game.myPlayerNumber;
     const container = isMine ? game.elements.myObjective : game.elements.opponentObjective;
-    const objectiveCard = container?.querySelector(".card.objectiveBack");
+    const objectiveCard = container?.querySelector(".pln-card.pln-objectiveBack");
     const objectiveType = objectives[playerNumber];
     if (objectiveCard && objectiveType != null) {
       flips.push(
         game.boardRenderer.flipCardFaceUp(
           objectiveCard,
-          "objectiveBack",
-          `objective${objectiveType}`,
+          "pln-objectiveBack",
+          `pln-objective${objectiveType}`,
         ),
       );
     }

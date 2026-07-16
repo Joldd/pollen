@@ -308,35 +308,26 @@ class Game extends \Bga\GameFramework\Table
             $playerCards = array();
             $player_color = $player_index;
 
-            // // 2 cards with value 0
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 0, 'nbr' => 2);
+            // 2 cards with value 0
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 0, 'nbr' => 2);
 
-            // // 3 cards with value 1
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 1, 'nbr' => 3);
+            // 3 cards with value 1
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 1, 'nbr' => 3);
 
-            // // 3 cards with value 2
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 2, 'nbr' => 3);
-
-            // // 3 cards with value 3
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 3);
-
-            // // 3 cards with value 4
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 3);
-
-            // // 1 card with value 5
-            // $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 5, 'nbr' => 1);
-
-            // // 2 movement cards
-            // $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 2);
-
-            //Test
+            // 3 cards with value 2
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 2, 'nbr' => 3);
 
             // 3 cards with value 3
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 2);
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 3, 'nbr' => 3);
 
             // 3 cards with value 4
-            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 2);
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 4, 'nbr' => 3);
 
+            // 1 card with value 5
+            $playerCards[] = array('type' => 'number', 'type_arg' => $player_color * 100 + 5, 'nbr' => 1);
+
+            // 2 movement cards
+            $playerCards[] = array('type' => 'movement', 'type_arg' => $player_color * 100, 'nbr' => 2);
 
             // Create cards in this player's personal deck
             $player_deck = 'deck_' . $player_id;
@@ -418,15 +409,44 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * True if the player has at least one legal action left to take with
+     * their remaining AP: any hand card can always be thrown for 1 AP, and
+     * an opponent's face-down card can be flipped for 2 AP.
+     */
+    public function hasLegalAction($player_id, int $player_number, int $remaining_ap): bool
+    {
+        if ($remaining_ap < 1) {
+            return false;
+        }
+
+        if ((int) $this->cards->countCardsInLocation('hand', $player_id) > 0) {
+            return true; // can always at least throw a card
+        }
+
+        if ($remaining_ap >= 2) {
+            foreach ($this->cards->getCardsInLocation('board') as $card) {
+                if ((int)$card['type_arg'][0] !== $player_number && (int)$card['location_arg'][2] === 1) {
+                    return true; // an opponent card can be flipped
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Decides who plays next after an action that spent `$remaining_ap`
-     * points: the same player continues if they still have AP, otherwise
-     * the turn passes and the new active player's AP resets to 2.
+     * points: the same player continues if they still have AP AND a legal
+     * action left to take with it, otherwise the turn passes and the new
+     * active player's AP resets to 2. Without the legal-action check, a
+     * player whose hand just emptied with AP left over (e.g. 1 AP, nothing
+     * left to flip) would be stuck with no possible action forever.
      *
      * @return array{0: mixed, 1: int, 2: int, 3: bool} [nextPlayerId, nextPlayerNumber, remainingAp, isNext]
      */
     public function resolveTurnAdvance($player_id, int $player_number, int $remaining_ap): array
     {
-        if ($remaining_ap > 0) {
+        if ($remaining_ap > 0 && $this->hasLegalAction($player_id, $player_number, $remaining_ap)) {
             return [$player_id, $player_number, $remaining_ap, false];
         }
 

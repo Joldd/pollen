@@ -9,20 +9,20 @@ const COLUMN_DELAY_S = 0.4;
 
 function createBadgeRow(id) {
   const row = document.createElement("div");
-  row.className = "cards";
+  row.className = "pln-cards";
   row.id = id;
   return row;
 }
 
 function createBadge(species, score, isWinner, points, delayIndex) {
   const badge = document.createElement("div");
-  badge.className = `score-badge ${species}${isWinner ? " score-badge-winner" : ""}`;
+  badge.className = `pln-score-badge ${species}${isWinner ? " pln-score-badge-winner" : ""}`;
   badge.style.animationDelay = `${delayIndex * COLUMN_DELAY_S}s`;
   badge.textContent = score;
 
   if (isWinner && points > 0) {
     const pointsTag = document.createElement("span");
-    pointsTag.className = "score-badge-points";
+    pointsTag.className = "pln-score-badge-points";
     pointsTag.textContent = `+${points}`;
     badge.appendChild(pointsTag);
   }
@@ -32,7 +32,7 @@ function createBadge(species, score, isWinner, points, delayIndex) {
 
 function createRowTotal(species, score) {
   const total = document.createElement("div");
-  total.className = `score-row-total ${species}`;
+  total.className = `pln-score-row-total ${species}`;
   total.textContent = `${_("Total")}: ${score}`;
   return total;
 }
@@ -65,8 +65,8 @@ export function revealColumnScores(
 
   const myPlayerNumber = game.myPlayerNumber;
   const opponentPlayerNumber = myPlayerNumber === 1 ? 2 : 1;
-  const myColor = myPlayerNumber === 1 ? "bee" : "bumblebee";
-  const opponentColor = myPlayerNumber === 1 ? "bumblebee" : "bee";
+  const myColor = myPlayerNumber === 1 ? "pln-bee" : "pln-bumblebee";
+  const opponentColor = myPlayerNumber === 1 ? "pln-bumblebee" : "pln-bee";
 
   // Insert in the SAME order (x=1..5 via "afterbegin") as BoardRenderer's
   // grid loop, so a badge ends up under/over the flower cell it belongs to.

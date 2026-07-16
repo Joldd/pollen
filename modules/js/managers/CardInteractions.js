@@ -8,7 +8,7 @@ export class CardInteractions {
   }
 
   attachPositionListeners() {
-    document.querySelectorAll(".position").forEach((card) => {
+    document.querySelectorAll(".pln-position").forEach((card) => {
       card.addEventListener("click", (e) => this.onPositionSelected(e));
     });
   }
@@ -28,7 +28,7 @@ export class CardInteractions {
       "cardToFlip",
     ].forEach((key) => {
       if (game[key]) {
-        game[key].classList.remove("selected");
+        game[key].classList.remove("pln-selected");
         game[key] = null;
       }
     });
@@ -72,10 +72,10 @@ export class CardInteractions {
 
       if (isOpponentFaceDown) {
         if (game.cardToFlip) {
-          game.cardToFlip.classList.remove("selected");
+          game.cardToFlip.classList.remove("pln-selected");
         }
         game.cardToFlip = e.currentTarget.children[0];
-        game.cardToFlip.classList.add("selected");
+        game.cardToFlip.classList.add("pln-selected");
         game.playerTurn.btnFlip.style.display = "inline-block";
         game.playerTurn.btnCancel.style.display = "inline-block";
         game.bga.statusBar.setTitle(
@@ -94,20 +94,20 @@ export class CardInteractions {
     let y = coords[2];
 
     //If a card to move is already selected, it means the player is selecting the destination for the movement
-    if (game.cardToMove && e.currentTarget.classList.contains("canGo")) {
+    if (game.cardToMove && e.currentTarget.classList.contains("pln-canGo")) {
       if (game.positionToGo) {
-        game.positionToGo.classList.remove("selected");
+        game.positionToGo.classList.remove("pln-selected");
       }
       if (
         e.currentTarget.children.length > 0 &&
-        e.currentTarget.children[0].classList.contains("myCard")
+        e.currentTarget.children[0].classList.contains("pln-myCard")
       ) {
         //The player is selecting a card to swap with the card to move
         if (game.cardToSwap) {
-          game.cardToSwap.classList.remove("selected");
+          game.cardToSwap.classList.remove("pln-selected");
         }
         game.cardToSwap = e.currentTarget.children[0];
-        game.cardToSwap.classList.add("selected");
+        game.cardToSwap.classList.add("pln-selected");
         game.bga.statusBar.setTitle(_("${you} are about to swap two cards"));
         game.playerTurn.btnMove.style.display = "inline-block";
         game.playerTurn.btnCancel.style.display = "inline-block";
@@ -115,7 +115,7 @@ export class CardInteractions {
         this.hideOtherCards();
       } else {
         game.positionToGo = e.currentTarget; // Store the selected position for movement
-        game.positionToGo.classList.add("selected");
+        game.positionToGo.classList.add("pln-selected");
         game.playerTurn.btnMove.style.display = "inline-block";
         game.playerTurn.btnCancel.style.display = "inline-block";
         game.bga.statusBar.setTitle(_("${you} are about to move a card"));
@@ -124,19 +124,19 @@ export class CardInteractions {
     }
 
     //Select a card to move if a movement card is selected
-    if (game.cardSelected.classList.contains("movement")) {
+    if (game.cardSelected.classList.contains("pln-movement")) {
       if (e.currentTarget.children.length === 0) {
         return; // No card to move in this position
       }
       if (game.cardToSwap) return; // Can't select a new card to move if a card to swap is already selected
-      if (!e.currentTarget.children[0].classList.contains("myCard")) {
+      if (!e.currentTarget.children[0].classList.contains("pln-myCard")) {
         return; // Can't move opponent's card
       }
       if (game.cardToMove) {
-        game.cardToMove.classList.remove("selected");
+        game.cardToMove.classList.remove("pln-selected");
       }
       game.cardToMove = e.currentTarget.children[0]; // Store the selected position for movement
-      game.cardToMove.classList.add("selected");
+      game.cardToMove.classList.add("pln-selected");
       game.bga.statusBar.setTitle(
         _("${you} must select a destination for the movement"),
       );
@@ -171,10 +171,10 @@ export class CardInteractions {
     }
 
     if (game.positionSelected) {
-      game.positionSelected.classList.remove("selected");
+      game.positionSelected.classList.remove("pln-selected");
     }
     game.positionSelected = e.currentTarget;
-    game.positionSelected.classList.add("selected");
+    game.positionSelected.classList.add("pln-selected");
 
     const card = game.cardSelected.textContent.trim();
 
@@ -198,13 +198,20 @@ export class CardInteractions {
       return; // Not this player's turn
     }
 
-    if (game.cardSelected) {
-      game.cardSelected.classList.remove("selected");
-    }
-    game.cardSelected = e.currentTarget;
-    game.cardSelected.classList.add("selected");
+    // Picking a (new) hand card abandons any in-progress board interaction
+    // (a partially chosen move, a pending flip...): reset all of it first,
+    // otherwise leftover state (e.g. cardToMove + a stale "pln-canGo" cell)
+    // can make a later position click fall into the wrong action branch.
+    this.clearSelection();
+    this.hideMyCards();
+    this.hideMovablePositions();
+    this.hidePlayablePositions();
+    game.playerTurn.hideButtons();
 
-    if (game.cardSelected.classList.contains("movement")) {
+    game.cardSelected = e.currentTarget;
+    game.cardSelected.classList.add("pln-selected");
+
+    if (game.cardSelected.classList.contains("pln-movement")) {
       this.hidePlayablePositions();
       game.bga.statusBar.setTitle(
         _("${you} must select one of your cards on the board to move it"),
@@ -225,8 +232,8 @@ export class CardInteractions {
   showMovablePositions(pos) {
     const game = this.game;
     // Clear previous highlights
-    document.querySelectorAll(".position").forEach((cell) => {
-      cell.classList.remove("canGo");
+    document.querySelectorAll(".pln-position").forEach((cell) => {
+      cell.classList.remove("pln-canGo");
     });
     let y = pos.y;
     let diffY = 1;
@@ -242,9 +249,9 @@ export class CardInteractions {
       (!cardInFront || card1.children.length > 0) &&
       (this.getCardByCoordinates(pos.x + 1, y - diffY) || y - diffY === 4) &&
       (card1.children.length === 0 ||
-        card1.children[0].classList.contains("myCard"))
+        card1.children[0].classList.contains("pln-myCard"))
     ) {
-      card1.classList.add("canGo");
+      card1.classList.add("pln-canGo");
     }
     const card2 = document.querySelector(`#card_${pos.x - 1}_${y}`);
     if (
@@ -252,25 +259,25 @@ export class CardInteractions {
       (!cardInFront || card2.children.length > 0) &&
       (this.getCardByCoordinates(pos.x - 1, y - diffY) || y - diffY === 4) &&
       (card2.children.length === 0 ||
-        card2.children[0].classList.contains("myCard"))
+        card2.children[0].classList.contains("pln-myCard"))
     ) {
-      card2.classList.add("canGo");
+      card2.classList.add("pln-canGo");
     }
     const card3 = document.querySelector(`#card_${pos.x}_${y + 1}`);
     if (
       card3 &&
       card3.children[0] &&
-      card3.children[0].classList.contains("myCard")
+      card3.children[0].classList.contains("pln-myCard")
     ) {
-      card3.classList.add("canGo");
+      card3.classList.add("pln-canGo");
     }
     const card4 = document.querySelector(`#card_${pos.x}_${y - 1}`);
     if (
       card4 &&
       card4.children[0] &&
-      card4.children[0].classList.contains("myCard")
+      card4.children[0].classList.contains("pln-myCard")
     ) {
-      card4.classList.add("canGo");
+      card4.classList.add("pln-canGo");
     }
     const card5 = document.querySelector(`#card_${pos.x + 1}_${y + 1}`);
     if (
@@ -279,9 +286,9 @@ export class CardInteractions {
       (this.getCardByCoordinates(pos.x + 1, y + 1 - diffY) ||
         y + 1 - diffY === 4) &&
       (card5.children.length === 0 ||
-        card5.children[0].classList.contains("myCard"))
+        card5.children[0].classList.contains("pln-myCard"))
     ) {
-      card5.classList.add("canGo");
+      card5.classList.add("pln-canGo");
     }
     const card6 = document.querySelector(`#card_${pos.x - 1}_${y + 1}`);
     if (
@@ -290,9 +297,9 @@ export class CardInteractions {
       (this.getCardByCoordinates(pos.x - 1, y + 1 - diffY) ||
         y + 1 - diffY === 4) &&
       (card6.children.length === 0 ||
-        card6.children[0].classList.contains("myCard"))
+        card6.children[0].classList.contains("pln-myCard"))
     ) {
-      card6.classList.add("canGo");
+      card6.classList.add("pln-canGo");
     }
     const card7 = document.querySelector(`#card_${pos.x + 1}_${y - 1}`);
     if (
@@ -301,9 +308,9 @@ export class CardInteractions {
       (this.getCardByCoordinates(pos.x + 1, y - 1 - diffY) ||
         y - 1 - diffY === 4) &&
       (card7.children.length === 0 ||
-        card7.children[0].classList.contains("myCard"))
+        card7.children[0].classList.contains("pln-myCard"))
     ) {
-      card7.classList.add("canGo");
+      card7.classList.add("pln-canGo");
     }
     const card8 = document.querySelector(`#card_${pos.x - 1}_${y - 1}`);
     if (
@@ -312,38 +319,39 @@ export class CardInteractions {
       (this.getCardByCoordinates(pos.x - 1, y - 1 - diffY) ||
         y - 1 - diffY === 4) &&
       (card8.children.length === 0 ||
-        card8.children[0].classList.contains("myCard"))
+        card8.children[0].classList.contains("pln-myCard"))
     ) {
-      card8.classList.add("canGo");
+      card8.classList.add("pln-canGo");
     }
   }
 
   hideMovablePositions() {
-    document.querySelectorAll(".position").forEach((cell) => {
-      cell.classList.remove("canGo");
-      cell.classList.remove("selected");
+    document.querySelectorAll(".pln-position").forEach((cell) => {
+      cell.classList.remove("pln-canGo");
+      cell.classList.remove("pln-selected");
     });
   }
 
   showMovableCards() {
-    document.querySelectorAll(".myCard").forEach((card) => {
-      if (card.parentNode.id !== "myCards" || card.parentNode.id !== "bin")
-        card.classList.add("movable");
+    document.querySelectorAll(".pln-myCard").forEach((card) => {
+      if (card.parentNode.id !== "myCards" && card.parentNode.id !== "bin")
+        card.classList.add("pln-movable");
     });
   }
 
   hideMyCards() {
-    document.querySelectorAll(".myCard").forEach((card) => {
-      card.classList.remove("movable");
-      card.classList.remove("selected");
+    document.querySelectorAll(".pln-myCard").forEach((card) => {
+      if (card === this.game.cardSelected) return;
+      card.classList.remove("pln-movable");
+      card.classList.remove("pln-selected");
     });
   }
 
   hideOtherCards() {
-    document.querySelectorAll(".myCard").forEach((card) => {
+    document.querySelectorAll(".pln-myCard").forEach((card) => {
       if (card !== this.game.cardToMove && card !== this.game.cardToSwap) {
-        card.classList.remove("movable");
-        card.classList.remove("selected");
+        card.classList.remove("pln-movable");
+        card.classList.remove("pln-selected");
       }
     });
   }
@@ -351,8 +359,8 @@ export class CardInteractions {
   showPlayablePositions(positions) {
     const game = this.game;
     // Clear previous highlights
-    document.querySelectorAll(".position").forEach((cell) => {
-      cell.classList.remove("playable");
+    document.querySelectorAll(".pln-position").forEach((cell) => {
+      cell.classList.remove("pln-playable");
     });
     // Highlight new playable positions
     positions.forEach((pos) => {
@@ -362,16 +370,16 @@ export class CardInteractions {
       }
       const cell = document.getElementById(`card_${pos.x}_${y}`);
       if (cell) {
-        cell.classList.add("playable");
+        cell.classList.add("pln-playable");
       }
     });
   }
 
   hidePlayablePositions() {
-    document.querySelectorAll(".position").forEach((cell) => {
-      cell.classList.remove("playable");
+    document.querySelectorAll(".pln-position").forEach((cell) => {
+      cell.classList.remove("pln-playable");
     });
-    document.querySelector(".position.selected")?.classList.remove("selected");
+    document.querySelector(".pln-position.pln-selected")?.classList.remove("pln-selected");
     this.game.positionSelected = null;
   }
 
@@ -392,14 +400,14 @@ export class CardInteractions {
       }
       const cell = document.getElementById(`card_${x}_${y}`);
       if (cell) {
-        cell.classList.add("flippable");
+        cell.classList.add("pln-flippable");
       }
     });
   }
 
   hideFlippableCards() {
-    document.querySelectorAll(".flippable").forEach((cell) => {
-      cell.classList.remove("flippable");
+    document.querySelectorAll(".pln-flippable").forEach((cell) => {
+      cell.classList.remove("pln-flippable");
     });
   }
 }

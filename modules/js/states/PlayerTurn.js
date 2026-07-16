@@ -137,6 +137,8 @@ export class PlayerTurn {
     });
 
     this.game.hidePlayablePositions();
+    this.game.hideMyCards();
+    this.game.hideMovablePositions();
     this.game.clearSelection();
   }
 
@@ -210,6 +212,8 @@ export class PlayerTurn {
       card_id: cardId,
     });
     this.game.hidePlayablePositions();
+    this.game.hideMyCards();
+    this.game.hideMovablePositions();
     this.game.clearSelection();
   }
 
