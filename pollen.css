@@ -648,10 +648,31 @@
    Small screens
    ========================================================================== */
 
-@media (max-width: 420px) {
+/* Below gameinfos.inc.php's game_interface_width (740px), BGA lays the
+   whole interface out on a fixed 740px canvas and applies a single
+   transform: scale(<1) to the WHOLE game area to fit the real screen — it
+   does not actually shrink the viewport CSS sees. A vw-based --card-w
+   reacts to the true (narrow) device width AND then gets shrunk again by
+   that same scale, compounding into tiny cards. Below that threshold, size
+   things as fixed px tuned for the 740px canvas instead: BGA's own scale
+   reproduces them proportionally on any phone, the same way .pln-hand's
+   width: 100% already does. */
+@media (max-width: 740px) {
   #game_play_area {
-    --gap: 3px;
+    /* --card-h is declared on :root as calc(var(--card-w) * 1.5) — that
+       var() resolves against :root's OWN --card-w, not this override,
+       since custom-property substitution binds to the declaring element.
+       Redeclare both here (as plain px, not calc()) so the 2:3 ratio
+       actually follows the overridden width instead of silently keeping
+       the old vw-based height. */
+    --card-w: 76px;
+    --card-h: 114px;
+    --gap: 6px;
     padding: 6px;
+  }
+
+  #board {
+    --board-pad: 14px;
   }
 
   .pln-hand {
