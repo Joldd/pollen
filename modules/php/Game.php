@@ -71,9 +71,35 @@ class Game extends \Bga\GameFramework\Table
      */
     public function getGameProgression()
     {
-        // TODO: compute and return the game progression
+        // The game ends as soon as a player's deck + hand are both empty, so
+        // track how depleted each player's pool of cards is (played = on the
+        // board or in the bin) and follow whichever player is furthest
+        // along — that's the one who'll end the game first.
+        $progressions = [];
 
-        return 0;
+        foreach (array_keys($this->loadPlayersBasicInfos()) as $player_id) {
+            $player_number = (int) $this->getPlayerNoById($player_id);
+            $lower = $player_number * 100;
+            $upper = $lower + 100;
+
+            $total = (int) $this->getUniqueValueFromDB(
+                "SELECT COUNT(*) FROM card WHERE card_type_arg >= $lower AND card_type_arg < $upper"
+            );
+            if ($total === 0) {
+                continue;
+            }
+
+            $remaining = (int) $this->cards->countCardsInLocation('deck_' . $player_id)
+                + (int) $this->cards->countCardsInLocation('hand', $player_id);
+
+            $progressions[] = ($total - $remaining) / $total;
+        }
+
+        if (empty($progressions)) {
+            return 0;
+        }
+
+        return (int) round(max($progressions) * 100);
     }
 
     /**
