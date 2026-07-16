@@ -53,8 +53,7 @@ class Game extends \Bga\GameFramework\Table
         $this->playerEnergy = $this->bga->counterFactory->createPlayerCounter('energy');
 
         // Initialize the deck
-        $this->cards  = self::getNew("module.common.deck");
-        $this->cards->init("card");
+        $this->cards = $this->bga->deckFactory->createDeck("card");
 
         $this->board = new BoardGeometry($this);
     }
@@ -369,7 +368,7 @@ class Game extends \Bga\GameFramework\Table
         $current_ap = $this->getActionPoints($player_id);
 
         if ($current_ap < $cost) {
-            throw new BgaUserException($this->_("Not enough action points"));
+            throw new BgaUserException(clienttranslate("Not enough action points"));
         }
 
         $new_ap = $current_ap - $cost;
@@ -393,9 +392,7 @@ class Game extends \Bga\GameFramework\Table
 
     public function setPlayerScore($player_id, int $score): void
     {
-        $this->DbQuery(
-            "UPDATE player SET player_score = $score WHERE player_id = $player_id"
-        );
+        $this->bga->playerScore->set($player_id, $score, null);
     }
 
     /**

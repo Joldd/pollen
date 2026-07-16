@@ -14,16 +14,16 @@ $gameinfos = [
     'game_name' => "Pollen",
 
     // Game publisher (use empty string if there is no publisher)
-    'publisher' => '',
+    'publisher' => 'Jeux Opla',
 
     // Url of game publisher website
-    'publisher_website' => '',
+    'publisher_website' => 'https://www.jeux-opla.fr/',
 
     // Board Game Geek ID of the publisher
     'publisher_bgg_id' => 0,
 
     // Board game geek ID of the game
-    'bgg_id' => 0,
+    'bgg_id' => 173338,
 
     // Players configuration that can be played (ex: 2 to 4 players)
     'players' => [2],

@@ -70,13 +70,13 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Verify card belongs to player
         if ($card['location'] != 'hand' || $card['location_arg'] != $player_id) {
-            throw new BgaUserException($this->game->_("This is not your card"));
+            throw new BgaUserException(clienttranslate("This is not your card"));
         }
 
         // Check if player has enough action points
         $current_ap = $this->game->getActionPoints($player_id);
         if ($current_ap < 1) {
-            throw new BgaUserException($this->game->_("Not enough action points"));
+            throw new BgaUserException(clienttranslate("Not enough action points"));
         }
 
         // Spend action points
@@ -119,28 +119,28 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Verify card belongs to player
         if ($card['location'] != 'hand' || $card['location_arg'] != $player_id) {
-            throw new BgaUserException($this->game->_("This is not your card"));
+            throw new BgaUserException(clienttranslate("This is not your card"));
         }
 
         // Verify card type
         if ($card['type'] == 'movement') {
-            throw new BgaUserException($this->game->_("You can't play movement cards"));
+            throw new BgaUserException(clienttranslate("You can't play movement cards"));
         }
 
         // Validate position
         if ($x < 1 || $x > 5 || $y < 1 || $y > 7 || $y == 4) {
-            throw new BgaUserException($this->game->_("Invalid position"));
+            throw new BgaUserException(clienttranslate("Invalid position"));
         }
 
         // Check if cell is occupied
         if ($this->isCellOccupied($x, $y)) {
-            throw new BgaUserException($this->game->_("This cell is already occupied"));
+            throw new BgaUserException(clienttranslate("This cell is already occupied"));
         }
 
         $playablePositions = $this->game->board->getPlayablePositions($player_id, $player_number);
         // Check if it is playable position
         if (!in_array(['x' => $x, 'y' => $y], $playablePositions)) {
-            throw new BgaUserException($this->game->_("You cannot play on this position"));
+            throw new BgaUserException(clienttranslate("You cannot play on this position"));
         }
 
         // Check if playing on own side or opponent's side
@@ -153,7 +153,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Check if player has enough action points
         $current_ap = $this->game->getActionPoints($player_id);
         if ($current_ap < $action_cost) {
-            throw new BgaUserException($this->game->_("Not enough action points"));
+            throw new BgaUserException(clienttranslate("Not enough action points"));
         }
 
         // EXECUTE ACTION
@@ -222,29 +222,29 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Verify card belongs to player
         if ($cardToMove['location'] != 'board' || $cardToMove['type_arg'][0] != $player_number) {
-            throw new BgaUserException($this->game->_("This is not your card"));
+            throw new BgaUserException(clienttranslate("This is not your card"));
         }
         if ($cardMovement['location'] != 'hand' || $cardMovement['location_arg'] != $player_id) {
-            throw new BgaUserException($this->game->_("This is not your movement card"));
+            throw new BgaUserException(clienttranslate("This is not your movement card"));
         }
         if ($cardToSwap !== null && ($cardToSwap['location'] != 'board' || $cardToSwap['type_arg'][0] != $player_number)) {
-            throw new BgaUserException($this->game->_("You can only swap with your own card"));
+            throw new BgaUserException(clienttranslate("You can only swap with your own card"));
         }
 
         // Verify card type
         if ($cardToMove['type'] == 'movement') {
-            throw new BgaUserException($this->game->_("You can't move movement cards"));
+            throw new BgaUserException(clienttranslate("You can't move movement cards"));
         }
         if ($cardMovement['type'] != 'movement') {
-            throw new BgaUserException($this->game->_("You must use a movement card to move a card"));
+            throw new BgaUserException(clienttranslate("You must use a movement card to move a card"));
         }
         if ($cardToSwap !== null && $cardToSwap['type'] == 'movement') {
-            throw new BgaUserException($this->game->_("You can't swap movement cards"));
+            throw new BgaUserException(clienttranslate("You can't swap movement cards"));
         }
 
         // Validate position
         if ($x < 1 || $x > 5 || $y < 1 || $y > 7 || $y == 4) {
-            throw new BgaUserException($this->game->_("Invalid position"));
+            throw new BgaUserException(clienttranslate("Invalid position"));
         }
 
         $old_x = (int)$cardToMove['location_arg'][0];
@@ -264,7 +264,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         }
 
         if (!$isPlayable) {
-            throw new BgaUserException($this->game->_("You cannot move on this position"));
+            throw new BgaUserException(clienttranslate("You cannot move on this position"));
         }
 
         // Check if playing on own side or opponent's side
@@ -276,7 +276,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         // Check if player has enough action points
         $current_ap = $this->game->getActionPoints($player_id);
         if ($current_ap < $action_cost) {
-            throw new BgaUserException($this->game->_("Not enough action points"));
+            throw new BgaUserException(clienttranslate("Not enough action points"));
         }
 
         // EXECUTE ACTION
@@ -342,20 +342,20 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
 
         // Must be on the board, belong to the opponent, and be face-down
         if ($card['location'] != 'board') {
-            throw new BgaUserException($this->game->_("This card is not on the board"));
+            throw new BgaUserException(clienttranslate("This card is not on the board"));
         }
         if ($card['type_arg'][0] == $player_number) {
-            throw new BgaUserException($this->game->_("You can only flip an opponent's card"));
+            throw new BgaUserException(clienttranslate("You can only flip an opponent's card"));
         }
         if ((int)$card['location_arg'][2] !== 1) {
-            throw new BgaUserException($this->game->_("This card is already face up"));
+            throw new BgaUserException(clienttranslate("This card is already face up"));
         }
 
         // Check if player has enough action points
         $action_cost = 2;
         $current_ap = $this->game->getActionPoints($player_id);
         if ($current_ap < $action_cost) {
-            throw new BgaUserException($this->game->_("Not enough action points"));
+            throw new BgaUserException(clienttranslate("Not enough action points"));
         }
 
         // EXECUTE ACTION
