@@ -48,7 +48,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
     {
         // Validate action
         $player_id = $this->game->getActivePlayerId();
-        $player_number = $this->game->getPlayerNoById($player_id);
+        $player_number = (int) $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $card = $this->game->cards->getCard($card_id);
@@ -96,7 +96,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $player_id = $this->game->getActivePlayerId();
         // Never trust the client-supplied player_number for ownership/cost
         // checks: recompute it server-side.
-        $player_number = $this->game->getPlayerNoById($player_id);
+        $player_number = (int) $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $card = $this->game->cards->getCard($card_id);
@@ -186,7 +186,7 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $player_id = $this->game->getActivePlayerId();
         // Never trust the client-supplied player_number for ownership/cost
         // checks: recompute it server-side.
-        $player_number = $this->game->getPlayerNoById($player_id);
+        $player_number = (int) $this->game->getPlayerNoById($player_id);
 
         // Get card info
         $cardToMove = $this->game->cards->getCard($card_toMove_id);

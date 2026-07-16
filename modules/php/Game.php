@@ -224,7 +224,7 @@ class Game extends \Bga\GameFramework\Table
 
         // ===== CREATE OBJECTIVE CARDS =====
         $objectiveCards = array();
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 0; $i <= 9; $i++) {
             $objectiveCards[] = array('type' => 'objective', 'type_arg' => $i, 'nbr' => 1);
         }
 
@@ -326,9 +326,9 @@ class Game extends \Bga\GameFramework\Table
      * points: the same player continues if they still have AP, otherwise
      * the turn passes and the new active player's AP resets to 2.
      *
-     * @return array{0: int, 1: int, 2: int, 3: bool} [nextPlayerId, nextPlayerNumber, remainingAp, isNext]
+     * @return array{0: mixed, 1: int, 2: int, 3: bool} [nextPlayerId, nextPlayerNumber, remainingAp, isNext]
      */
-    public function resolveTurnAdvance(int $player_id, int $player_number, int $remaining_ap): array
+    public function resolveTurnAdvance($player_id, int $player_number, int $remaining_ap): array
     {
         if ($remaining_ap > 0) {
             return [$player_id, $player_number, $remaining_ap, false];

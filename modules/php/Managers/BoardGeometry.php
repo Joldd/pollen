@@ -29,7 +29,7 @@ class BoardGeometry
         return null;
     }
 
-    public function getPlayablePositions(int $player_id, int $player_number): array
+    public function getPlayablePositions($player_id, int $player_number): array
     {
         $playablePositions = [];
 

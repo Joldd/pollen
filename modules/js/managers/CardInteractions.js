@@ -63,6 +63,7 @@ export class CardInteractions {
         game.playerTurn.btnMove.style.display = "inline-block";
         game.playerTurn.btnCancel.style.display = "inline-block";
         this.hideMovablePositions();
+        this.hideOtherCards();
       } else {
         game.positionToGo = e.currentTarget; // Store the selected position for movement
         game.positionToGo.classList.add("selected");
@@ -90,6 +91,7 @@ export class CardInteractions {
       game.bga.statusBar.setTitle(
         _("${you} must select a destination for the movement"),
       );
+      game.playerTurn.btnCancel.style.display = "inline-block";
       const pos = {
         x: parseInt(x),
         y: game.firstPlayer ? parseInt(y) : 8 - parseInt(y),
@@ -158,7 +160,7 @@ export class CardInteractions {
       game.bga.statusBar.setTitle(
         _("${you} must select one of your cards on the board to move it"),
       );
-      this.showMyCards();
+      this.showMovableCards();
     } else {
       this.hideMyCards();
       this.showPlayablePositions(game.playable_positions);
@@ -168,6 +170,7 @@ export class CardInteractions {
     }
 
     game.playerTurn.btnDestroy.style.display = "inline-block";
+    game.playerTurn.btnCancel.style.display = "inline-block";
   }
 
   showMovablePositions(pos) {
@@ -273,9 +276,10 @@ export class CardInteractions {
     });
   }
 
-  showMyCards() {
+  showMovableCards() {
     document.querySelectorAll(".myCard").forEach((card) => {
-      card.classList.add("movable");
+      if (card.parentNode.id !== "myCards" || card.parentNode.id !== "bin")
+        card.classList.add("movable");
     });
   }
 
@@ -283,6 +287,15 @@ export class CardInteractions {
     document.querySelectorAll(".myCard").forEach((card) => {
       card.classList.remove("movable");
       card.classList.remove("selected");
+    });
+  }
+
+  hideOtherCards() {
+    document.querySelectorAll(".myCard").forEach((card) => {
+      if (card !== this.game.cardToMove && card !== this.game.cardToSwap) {
+        card.classList.remove("movable");
+        card.classList.remove("selected");
+      }
     });
   }
 

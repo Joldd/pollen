@@ -168,6 +168,7 @@ export class PlayerTurn {
       player_number: this.game.myPlayerNumber,
     });
     this.game.hideMovablePositions();
+    this.game.hideMyCards();
   }
 
   onDestroy() {
