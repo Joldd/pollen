@@ -114,7 +114,6 @@ export class Game {
     // Store player number
     this.myPlayerNumber = gamedatas.player_number;
     this.firstPlayer = this.myPlayerNumber === 1;
-    console.log("I am player:", this.myPlayerNumber); // 1 or 2
 
     this.boardRenderer.render(gamedatas);
     this.cardInteractions.attachPositionListeners();
@@ -167,8 +166,6 @@ export class Game {
 
     */
   setupNotifications() {
-    console.log("notifications subscriptions setup");
-
     // automatically listen to the notifications, based on the `notif_xxx` function on this class.
     this.bga.notifications.setupPromiseNotifications();
   }

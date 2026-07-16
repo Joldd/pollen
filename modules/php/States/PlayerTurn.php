@@ -376,5 +376,87 @@ class PlayerTurn extends \Bga\GameFramework\States\GameState
         $this->game->advanceState($is_next);
     }
 
-    function zombie(int $playerId) {}
+    /**
+     * Level 1 zombie: picks uniformly at random among every legal action the
+     * departed player currently has (play a card, hidden or not, move one
+     * with a movement card, throw a card, flip an opponent's hidden card),
+     * then executes it via the same #[PossibleAction] method a real player
+     * would trigger — so it gets the exact same validation/notifications.
+     */
+    function zombie(int $playerId): void
+    {
+        $player_number = (int) $this->game->getPlayerNoById($playerId);
+        $current_ap = (int) $this->game->getActionPoints($playerId);
+
+        $candidates = [];
+
+        $hand = $this->game->cards->getCardsInLocation('hand', $playerId);
+        $playablePositions = $this->game->board->getPlayablePositions($playerId, $player_number);
+        $boardCards = $this->game->cards->getCardsInLocation('board');
+
+        foreach ($hand as $card) {
+            $cardId = (int) $card['id'];
+
+            if ($card['type'] === 'number') {
+                foreach ($playablePositions as $pos) {
+                    $visibleCost = $this->game->isOwnSide($player_number, $pos['y']) ? 1 : 2;
+                    if ($current_ap >= $visibleCost) {
+                        $candidates[] = function () use ($cardId, $pos, $player_number) {
+                            $this->actPlayCard($cardId, $pos['x'], $pos['y'], false, $player_number);
+                        };
+                    }
+                    if ($current_ap >= 2) {
+                        $candidates[] = function () use ($cardId, $pos, $player_number) {
+                            $this->actPlayCard($cardId, $pos['x'], $pos['y'], true, $player_number);
+                        };
+                    }
+                }
+            } elseif ($card['type'] === 'movement' && $current_ap >= 1) {
+                foreach ($boardCards as $boardCard) {
+                    if ((int)$boardCard['type_arg'][0] !== $player_number) {
+                        continue;
+                    }
+                    $boardCardId = (int) $boardCard['id'];
+                    $movable = $this->game->board->getMovablePositions($boardCard['location_arg'], $player_number, false);
+                    foreach ($movable as $pos) {
+                        $cost = $this->game->isOwnSide($player_number, $pos['y']) ? 1 : 2;
+                        if ($current_ap >= $cost) {
+                            $candidates[] = function () use ($cardId, $boardCardId, $pos, $player_number) {
+                                $this->actMoveCard($cardId, $boardCardId, null, $pos['x'], $pos['y'], $player_number);
+                            };
+                        }
+                    }
+                }
+            }
+
+            if ($current_ap >= 1) {
+                $candidates[] = function () use ($cardId) {
+                    $this->actThrowCard($cardId);
+                };
+            }
+        }
+
+        if ($current_ap >= 2) {
+            foreach ($boardCards as $boardCard) {
+                if ((int)$boardCard['type_arg'][0] === $player_number) {
+                    continue;
+                }
+                if ((int)$boardCard['location_arg'][2] === 1) {
+                    $flipId = (int) $boardCard['id'];
+                    $candidates[] = function () use ($flipId) {
+                        $this->actFlipCard($flipId);
+                    };
+                }
+            }
+        }
+
+        if (empty($candidates)) {
+            // Nothing legal left (shouldn't normally happen since throwing a
+            // card only costs 1 AP) — just move the turn along.
+            $this->game->gamestate->nextState('nextPlayer');
+            return;
+        }
+
+        $candidates[array_rand($candidates)]();
+    }
 }

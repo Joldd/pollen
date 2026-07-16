@@ -112,7 +112,6 @@ export class PlayerTurn {
 
   onConfirm(isHide) {
     if (!this.game.cardSelected || !this.game.positionSelected) {
-      console.log("Please select a card and a position before confirming.");
       return;
     }
 
@@ -154,7 +153,6 @@ export class PlayerTurn {
       !this.game.cardToMove ||
       (!this.game.positionToGo && !this.game.cardToSwap)
     ) {
-      console.log("Please select a card to move and a destination position.");
       return;
     }
     const cardToMoveId = this.game.cardToMove.id.split("_")[1];
@@ -180,7 +178,6 @@ export class PlayerTurn {
 
   onFlip() {
     if (!this.game.cardToFlip) {
-      console.log("Please select an opponent's face-down card to flip.");
       return;
     }
     const cell = this.game.cardToFlip.parentElement;
@@ -189,7 +186,6 @@ export class PlayerTurn {
     const y = coords[2];
     const card = this.game.getCardByCoordinates(x, y);
     if (!card) {
-      console.log("Could not find the card to flip.");
       return;
     }
 
@@ -202,7 +198,6 @@ export class PlayerTurn {
 
   onDestroy() {
     if (!this.game.cardSelected) {
-      console.log("Please select a card to throw.");
       return;
     }
     const cardId = this.game.cardSelected.id.split("_")[1];

@@ -133,7 +133,6 @@ export class BoardRenderer {
     }
 
     // Display last thrown card in the bin
-    console.log("Last thrown card:", gamedatas.last_thrown);
     if (gamedatas.last_thrown) {
       const lastThrownCard = gamedatas.last_thrown;
       const color = lastThrownCard.card_type_arg[0] == 1 ? "bee" : "bumblebee";
@@ -313,7 +312,6 @@ export class BoardRenderer {
   async throwCardToBin() {
     const game = this.game;
     if (!game.cardSelected) {
-      console.log("Please select a card to throw.");
       return;
     }
 
