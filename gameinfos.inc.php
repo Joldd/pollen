@@ -20,7 +20,7 @@ $gameinfos = [
     'publisher_website' => 'https://www.jeux-opla.fr/',
 
     // Board Game Geek ID of the publisher
-    'publisher_bgg_id' => 0,
+    'publisher_bgg_id' => 24945,
 
     // Board game geek ID of the game
     'bgg_id' => 173338,
