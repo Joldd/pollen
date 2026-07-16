@@ -1,4 +1,12 @@
 /**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
  * Builds and updates all the DOM for the table: board grid, hands, objective
  * cards, deck counters, opponent info and the bin. Owns `game.elements`,
  * the cache of the main DOM nodes other managers read from.
@@ -150,6 +158,32 @@ export class BoardRenderer {
                          </div>`;
       bin.insertAdjacentHTML("afterbegin", cardDiv);
     }
+
+    this.attachTooltips();
+  }
+
+  // Static, class/id-based tooltips for graphics whose meaning isn't
+  // obvious at a glance. Bound once at setup — BGA's tooltip helpers use
+  // event delegation, so they keep working for elements added later
+  // (new hand cards, cards flying into the bin, etc.).
+  attachTooltips() {
+    const game = this.game;
+    const tooltips = game.bga.gameui;
+    if (!tooltips) return;
+
+    tooltips.addTooltipToClass(
+      "pln-movement",
+      _("Movement card: move one of your cards on the board instead of playing a new one (1 AP on your side, 2 AP on the opponent's side)"),
+      "",
+    );
+    tooltips.addTooltip("bin", _("Discarded and used cards"), "");
+    tooltips.addTooltip("myDeck", _("Your remaining cards to draw"), "");
+    tooltips.addTooltip("opponentDeck", _("Opponent's remaining cards to draw"), "");
+    tooltips.addTooltip(
+      "myObjective",
+      _("Your objective card: matching flowers give a bonus point when you win their column. Click to enlarge."),
+      "",
+    );
   }
 
   attachObjectiveModal(myObjective) {

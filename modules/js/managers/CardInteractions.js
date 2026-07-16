@@ -1,4 +1,12 @@
 /**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
  * Handles clicks on hand cards and board positions: card/position
  * selection, and highlighting of playable / movable cells.
  */
@@ -221,7 +229,7 @@ export class CardInteractions {
       this.hideMyCards();
       this.showPlayablePositions(game.playable_positions);
       game.bga.statusBar.setTitle(
-        _("${you} must select a position on the board or "),
+        _("${you} must select a position on the board, or throw the card"),
       );
     }
 
@@ -403,6 +411,16 @@ export class CardInteractions {
         cell.classList.add("pln-flippable");
       }
     });
+
+    // Cells only just got tagged "pln-flippable" above: (re)bind now so the
+    // tooltip actually reaches them — addTooltipToClass only attaches to
+    // nodes that already carry the class at call time, it doesn't watch the
+    // DOM for future matches.
+    game.bga.gameui?.addTooltipToClass(
+      "pln-flippable",
+      _("Face-down opponent's card: spend 2 AP to reveal its value"),
+      "",
+    );
   }
 
   hideFlippableCards() {

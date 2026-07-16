@@ -17,13 +17,13 @@ $gameinfos = [
     'publisher' => '',
 
     // Url of game publisher website
-    'publisher_website' => 'http://www.mypublishingcompany.com/',
+    'publisher_website' => '',
 
     // Board Game Geek ID of the publisher
-    'publisher_bgg_id' => 1234,
+    'publisher_bgg_id' => 0,
 
     // Board game geek ID of the game
-    'bgg_id' => 173338,
+    'bgg_id' => 0,
 
     // Players configuration that can be played (ex: 2 to 4 players)
     'players' => [2],

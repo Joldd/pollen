@@ -1,4 +1,12 @@
 /**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
  * We create one State class per declared state on the PHP side, to handle all state specific code here.
  * onEnteringState, onLeavingState and onPlayerActivationChange are predefined names that will be called by the framework.
  * When executing code in this state, you can access the args using this.args

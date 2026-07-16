@@ -1,4 +1,12 @@
 /**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
  * Reaction to cometD notifications sent by pollen.game.php (via
  * notifyAllPlayers / notifyPlayer). Each function mirrors a `notif_xxx`
  * name and receives the Game instance plus the notification args.

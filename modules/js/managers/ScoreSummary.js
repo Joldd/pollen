@@ -1,4 +1,12 @@
 /**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * pollen implementation : © Julien Coutouly julien.coutouly@gmail.com
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
  * Reveals the end-of-game column scoring directly on the board: two rows of
  * badges — the opponent's column tally above the flower row, mine below —
  * inserted column by column with a staggered reveal, then the final winner
