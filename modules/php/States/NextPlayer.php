@@ -27,7 +27,8 @@ class NextPlayer extends GameState
     {
          // Active next player
         $player_id = intval($this->game->activeNextPlayer());
-        
+        $this->game->giveExtraTime($player_id);
+
         // Reset action points to 2 for the new active player
         $this->game->setActionPoints($player_id, 2);  
         

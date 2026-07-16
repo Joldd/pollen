@@ -305,6 +305,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Activate first player once everything has been initialized and ready
         $this->activeNextPlayer();
+        $this->giveExtraTime($this->getActivePlayerId());
 
         return PlayerTurn::class;
     }
